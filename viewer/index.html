@@ -3,31 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>J.A.R.V.I.S. — Personal Desktop Intelligence System</title>
+  <title>J.A.R.V.I.S. — Personal Desktop Intelligence OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <script src="graph-data.js"></script>
+  <script src="orb.js"></script>
+
   <style>
-    /* ═══════ RESET & TOKENS ═══════ */
+    /* ═══════════════════════════════════════════════════════════════
+       1. RESET & THEME TOKENS (MATCHING REFERENCE SCREENSHOT)
+       ═══════════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --bg: #030712;
-      --bg-panel: rgba(10, 15, 30, 0.82);
-      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-glass: rgba(10, 16, 26, 0.72);
+      --bg-glass-card: rgba(13, 20, 34, 0.82);
+      --bg-glass-dark: rgba(5, 8, 15, 0.9);
       --cyan: #00e5ff;
       --cyan-bright: #00ffff;
-      --cyan-dim: rgba(0, 229, 255, 0.2);
       --cyan-glow: rgba(0, 229, 255, 0.45);
+      --cyan-dim: rgba(0, 229, 255, 0.15);
+      --emerald: #10b981;
       --amber: #f59e0b;
       --crimson: #ef4444;
-      --emerald: #10b981;
+      --purple: #a855f7;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
-      --border: rgba(0, 229, 255, 0.16);
-      --border-bright: rgba(0, 229, 255, 0.45);
-      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --border-cyan: rgba(0, 229, 255, 0.28);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
@@ -41,1511 +50,1548 @@
       user-select: none;
     }
 
-    /* ═══════ BACKGROUND CANVASES ═══════ */
-    #starfield {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 0; pointer-events: none;
-    }
+    /* Fullscreen 3D WebGL Galaxy */
     #graph-container {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       z-index: 1;
     }
 
-    /* ═══════ TOP HUD NAVIGATION BAR ═══════ */
-    #hud-topbar {
+    /* Subtle background grid & stars */
+    #bg-stars {
       position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      height: 58px;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(180deg, rgba(3, 7, 18, 0.95) 0%, rgba(3, 7, 18, 0.6) 80%, transparent 100%);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, #081120 0%, #030712 100%);
     }
-    .hud-brand {
+
+    /* ═══════════════════════════════════════════════════════════════
+       2. LEFT SIDEBAR PANEL (MATCHING REFERENCE SCREENSHOT)
+       ═══════════════════════════════════════════════════════════════ */
+    #left-panel {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      bottom: 90px;
+      width: 270px;
+      z-index: 20;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 12px;
-      font-weight: 800;
-      letter-spacing: 2.5px;
-      font-size: 16px;
-      color: #fff;
-    }
-    .hud-brand span.logo-text {
-      background: linear-gradient(135deg, #00ffff, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px rgba(0,255,255,0.4);
-    }
-    .status-pill {
-      font-size: 10px;
-      letter-spacing: 1px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 14px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: #34d399;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .status-pill.stopped {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.45);
-      color: #f87171;
-    }
-    .status-pill.paused {
-      background: rgba(245, 158, 11, 0.15);
-      border-color: rgba(245, 158, 11, 0.45);
-      color: #fbbf24;
-    }
-    .status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 8px currentColor;
-    }
-
-    /* ═══════ HUD DECK NAVIGATION TABS ═══════ */
-    .hud-tabs {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 3px 4px;
-    }
-    .hud-tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 5px 14px;
-      border-radius: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-    .hud-tab-btn:hover { color: #fff; background: rgba(255,255,255,0.06); }
-    .hud-tab-btn.active {
-      background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(56, 189, 248, 0.15));
-      border: 1px solid var(--cyan);
-      color: var(--cyan-bright);
-      box-shadow: 0 0 14px rgba(0, 229, 255, 0.3);
-    }
-
-    /* ═══════ TOPBAR ACTIONS ═══════ */
-    .hud-top-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .stop-btn {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #f87171;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    .stop-btn:hover {
-      background: #ef4444;
-      color: #fff;
-      box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
-    }
-    .icon-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      width: 32px; height: 32px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-    .icon-btn:hover { color: #fff; border-color: var(--cyan); }
-
-    /* ═══════ HOLOGRAPHIC ORB WIDGET (LEFT HUD) ═══════ */
-    #hud-orb-anchor {
-      position: fixed;
-      top: 76px; left: 24px;
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      background: rgba(8, 12, 24, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 16px;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    #hud-orb-anchor.compact {
-      top: 20px; left: 20px;
-      background: rgba(0,0,0,0.55);
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      padding: 10px;
-    }
-    #jarvis-orb-canvas {
-      width: 200px;
-      height: 200px;
-      cursor: grab;
-      filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.35));
-    }
-    .orb-controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .orb-btn {
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid var(--border);
-      color: var(--cyan);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .orb-btn:hover {
-      background: var(--cyan);
-      color: #030712;
-      box-shadow: 0 0 12px var(--cyan-glow);
-    }
-
-    /* ═══════ MAIN COMMAND DECK PANELS ═══════ */
-    #hud-command-deck {
-      position: fixed;
-      top: 76px;
-      left: 270px;
-      right: 24px;
-      bottom: 24px;
-      z-index: 40;
-      display: flex;
-      flex-direction: column;
+      overflow-y: auto;
       pointer-events: none;
     }
-    .deck-panel {
-      display: none;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
-      padding: 20px 24px;
-      overflow: hidden;
+    #left-panel > * {
       pointer-events: auto;
     }
-    .deck-panel.active { display: flex; }
+    #left-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+    #left-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
 
-    /* ─── CONVERSATION DECK ─── */
-    #conversation-transcript {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .chat-bubble {
-      max-width: 82%;
-      padding: 12px 18px;
-      border-radius: 14px;
-      line-height: 1.6;
-      font-size: 13.5px;
-      animation: fadeIn 0.25s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .chat-bubble.assistant {
-      align-self: flex-start;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(0, 229, 255, 0.2);
-      color: #f1f5f9;
-      box-shadow: 0 4px 18px rgba(0, 229, 255, 0.08);
-    }
-    .chat-bubble.user {
-      align-self: flex-end;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(99, 102, 241, 0.3));
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      color: #fff;
-    }
-    .citation-tags {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-    .citation-tag {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: rgba(0, 229, 255, 0.12);
-      border: 1px solid var(--border);
-      color: var(--cyan);
-      cursor: pointer;
-    }
-    .citation-tag:hover { background: var(--cyan); color: #000; }
-
-    /* ─── INPUT CONTROL BAR ─── */
-    #chat-bar-wrap {
-      margin-top: 14px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    #chat-input {
-      flex: 1;
-      height: 48px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid var(--border);
+    /* App Header Card */
+    .os-header-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
       border-radius: 12px;
-      padding: 0 18px;
-      color: #fff;
-      font-size: 14px;
+      padding: 14px 16px;
+    }
+    .os-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #ffffff;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .os-title::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+    .os-subtitle {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-family: var(--font-mono);
+    }
+    .btn-2d-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-2d-toggle:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    /* Search Brain Input */
+    .search-box-wrap {
+      position: relative;
+    }
+    .search-box {
+      width: 100%;
+      background: rgba(8, 13, 23, 0.85);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 9px 12px 9px 34px;
+      font-size: 12px;
+      color: var(--text);
       outline: none;
       transition: all 0.2s;
     }
-    #chat-input:focus {
+    .search-box:focus {
       border-color: var(--cyan);
-      box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
     }
-    .send-btn, .mic-btn {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(0, 229, 255, 0.12);
-      color: var(--cyan-bright);
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .send-btn:hover, .mic-btn:hover {
-      background: var(--cyan);
-      color: #030712;
-      box-shadow: 0 0 18px var(--cyan-glow);
-    }
-    .mic-btn.listening {
-      background: #ef4444;
-      color: #fff;
-      border-color: #f87171;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
-      animation: pulseMic 1s infinite alternate;
-    }
-    @keyframes pulseMic {
-      from { transform: scale(1); }
-      to { transform: scale(1.08); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-dim);
     }
 
-    /* ─── VISION DECK ─── */
-    .deck-header {
+    /* Generic Sidebar HUD Section Box */
+    .hud-box {
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .hud-box-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Inspector Card */
+    .inspector-text {
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+    #inspector-details {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: none;
+    }
+    .inspector-node-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+    .inspector-node-excerpt {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    /* Top Hubs List */
+    .hub-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hub-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .deck-title {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: var(--cyan-bright);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .vision-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 18px;
-      flex: 1;
-      overflow: hidden;
-    }
-    .vision-preview-card {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow: hidden;
-    }
-    .vision-img-frame {
-      flex: 1;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .vision-img-frame img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-    .vision-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .btn-action {
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid var(--border);
-      color: #fff;
+      padding: 5px 8px;
+      border-radius: 6px;
       font-size: 11.5px;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    .btn-action:hover {
-      background: rgba(0, 229, 255, 0.25);
-      border-color: var(--cyan);
-      color: var(--cyan-bright);
-    }
-    .btn-action.primary {
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
-      border-color: transparent;
-    }
-    .btn-action.primary:hover {
-      box-shadow: 0 0 16px rgba(14, 165, 233, 0.5);
-    }
-    .vision-analysis-card {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-    }
-    .vision-analysis-text {
-      font-size: 13px;
-      line-height: 1.7;
-      color: #cbd5e1;
-      white-space: pre-wrap;
-    }
-
-    /* ─── SKILLS CATALOGUE DECK ─── */
-    .skills-search-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    .skills-filter-pills {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-    .pill {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
       color: var(--text-muted);
       cursor: pointer;
-      white-space: nowrap;
+      transition: all 0.15s;
     }
-    .pill:hover, .pill.active {
-      background: rgba(0, 229, 255, 0.2);
-      border-color: var(--cyan);
-      color: var(--cyan-bright);
+    .hub-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
     }
-    .skills-grid {
-      flex: 1;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 12px;
-      padding-right: 6px;
+    .hub-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .skill-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+    .hub-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .hub-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* Forces Sliders */
+    .force-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .force-slider {
+      width: 110px;
+      height: 4px;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+    .force-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--cyan);
+      cursor: pointer;
+      box-shadow: 0 0 6px var(--cyan);
+    }
+
+    /* Display Mode Dropdown */
+    .display-select {
+      width: 100%;
+      background: rgba(8, 13, 23, 0.85);
+      border: 1px solid var(--border-glass);
+      color: var(--text);
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       3. TOP CENTER CONTROLS (FIT & CAMERA)
+       ═══════════════════════════════════════════════════════════════ */
+    #top-controls {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 4px 8px;
+    }
+    .cam-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .cam-btn:hover, .cam-btn.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+    .cam-btn.fit {
+      color: var(--cyan);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       4. TOP RIGHT FILTER LEGEND
+       ═══════════════════════════════════════════════════════════════ */
+    #filter-panel {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 170px;
+      z-index: 20;
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
       border-radius: 12px;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
+      gap: 6px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .filter-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .filter-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .filter-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .filter-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       5. RIGHT SIDE: THE PURE STANDALONE TRANSPARENT ORB
+       ═══════════════════════════════════════════════════════════════ */
+    #orb-right-section {
+      position: fixed;
+      right: 28px;
+      top: 190px;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    #orb-right-section > * {
+      pointer-events: auto;
+    }
+
+    /* PURE TRANSPARENT ORB CONTAINER - NO RECTANGLE, NO CARD, NO BORDER */
+    #orb-standalone-wrap {
+      width: 250px;
+      height: 250px;
+      position: relative;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #jarvis-orb-canvas {
+      width: 250px;
+      height: 250px;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      display: block;
+    }
+
+    /* Status Badge directly below orb */
+    .orb-status-badge {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
       gap: 8px;
+      background: rgba(6, 12, 22, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 14px;
+      padding: 4px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+    }
+    .orb-status-online {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--emerald);
+    }
+    .orb-status-online::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
+    }
+    .orb-status-model {
+      color: var(--cyan);
+    }
+
+    /* Mode selector pills (RING, CUBE, FACE) */
+    .orb-modes-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+    }
+    .orb-mode-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .orb-mode-pill:hover, .orb-mode-pill.active {
+      background: rgba(0, 229, 255, 0.12);
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    /* Action toggles stacked below orb (EYES off, HOLO off, FOCUS off, REFLEX hidden) */
+    .orb-actions-stack {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      width: 140px;
+    }
+    .action-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(6, 12, 22, 0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-pill:hover {
+      border-color: var(--cyan);
+      color: #fff;
+    }
+    .action-pill.active {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: var(--cyan);
+      color: var(--cyan-bright);
+    }
+    .action-pill span.state-val {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+    .action-pill.active span.state-val {
+      color: var(--emerald);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       6. BOTTOM FLOATING PROMPT BAR & CONVERSATION OVERLAY
+       ═══════════════════════════════════════════════════════════════ */
+    #bottom-prompt-deck {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(720px, 92vw);
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Floating assistant response card (visible when JARVIS speaks or answers) */
+    #assistant-response-card {
+      width: 100%;
+      background: var(--bg-glass-card);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border-cyan);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.12);
+      animation: fadeInCard 0.25s ease-out;
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .resp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--cyan);
+      font-weight: 700;
+      letter-spacing: 0.8px;
+    }
+    .resp-body {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .resp-sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .source-pill {
+      font-size: 10.5px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      border-radius: 10px;
+      padding: 2px 8px;
+      color: var(--cyan);
+      cursor: pointer;
+    }
+    .source-pill:hover {
+      background: rgba(0, 229, 255, 0.2);
+    }
+
+    /* Pill Prompt Input Bar */
+    .pill-input-bar {
+      width: 100%;
+      background: rgba(8, 14, 25, 0.85);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(0, 229, 255, 0.24);
+      border-radius: 30px;
+      padding: 6px 10px 6px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.1);
       transition: all 0.2s;
     }
-    .skill-card:hover {
+    .pill-input-bar:focus-within {
       border-color: var(--cyan);
-      box-shadow: 0 4px 18px rgba(0, 229, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 229, 255, 0.28);
+    }
+    #user-prompt-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      color: #ffffff;
+      font-family: var(--font-sans);
+    }
+    #user-prompt-input::placeholder {
+      color: rgba(148, 163, 184, 0.65);
+    }
+
+    /* Quick Action Buttons on Prompt Bar */
+    .prompt-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .prompt-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+    .prompt-icon-btn:hover {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: var(--cyan);
+      color: #fff;
+    }
+    .prompt-icon-btn.mic-btn {
+      color: var(--cyan);
+      border-color: rgba(0, 229, 255, 0.35);
+    }
+    .prompt-icon-btn.mic-btn.listening {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--crimson);
+      color: var(--crimson);
+      animation: pulseMic 1.2s infinite;
+    }
+    @keyframes pulseMic {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); box-shadow: 0 0 12px var(--crimson); }
+    }
+    .prompt-send-btn {
+      background: var(--cyan);
+      color: #030712;
+      border: none;
+      font-weight: 700;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .prompt-send-btn:hover {
+      background: var(--cyan-bright);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       7. SLIDE-OUT DRAWERS (SKILLS, VISION, SAFETY)
+       ═══════════════════════════════════════════════════════════════ */
+    .drawer-overlay {
+      position: fixed;
+      top: 0; right: -420px;
+      width: 400px;
+      height: 100vh;
+      background: var(--bg-glass-dark);
+      backdrop-filter: blur(24px);
+      border-left: 1px solid var(--border-cyan);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.7);
+    }
+    .drawer-overlay.open {
+      right: 0;
+    }
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .drawer-close:hover { color: #fff; }
+    .drawer-content {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+    }
+
+    /* Skill Catalogue Items in Drawer */
+    .drawer-search {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #fff;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .skill-card-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .skill-card-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .skill-name {
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .skill-desc {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      line-height: 1.45;
-    }
-    .skill-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 6px;
-    }
-    .risk-badge {
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      padding: 2px 7px;
-      border-radius: 8px;
-      text-transform: uppercase;
-    }
-    .risk-badge.read_only { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .risk-badge.reversible { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
-    .risk-badge.consequential { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    .risk-badge.restricted { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-
-    /* ─── 3D GALAXY CONTROLS HUD ─── */
-    #galaxy-nav-hud {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      z-index: 20;
-      display: flex;
-      gap: 8px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 6px 10px;
-      backdrop-filter: blur(12px);
-    }
-    .galaxy-btn {
-      background: rgba(0, 229, 255, 0.08);
-      border: 1px solid var(--border);
-      color: var(--cyan);
+    .skill-card-name {
       font-size: 12px;
       font-weight: 600;
-      padding: 5px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
+      color: #fff;
     }
-    .galaxy-btn:hover {
+    .skill-risk-badge {
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 229, 255, 0.1);
+      color: var(--cyan);
+    }
+    .skill-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+    .skill-run-btn {
+      align-self: flex-end;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: var(--cyan);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .skill-run-btn:hover {
       background: var(--cyan);
       color: #030712;
-      box-shadow: 0 0 10px var(--cyan-glow);
-    }
-
-    /* ─── SIDE PANEL (NOTE VIEWER) ─── */
-    #side-panel {
-      position: fixed;
-      top: 58px; right: 0; bottom: 0;
-      width: 420px;
-      max-width: 90vw;
-      z-index: 120;
-      background: rgba(8, 12, 24, 0.94);
-      border-left: 1px solid var(--border);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex;
-      flex-direction: column;
-      box-shadow: -10px 0 40px rgba(0,0,0,0.7);
-    }
-    #side-panel.open { transform: translateX(0); }
-    #panel-header {
-      padding: 20px 22px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
-    #panel-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--cyan-bright);
-    }
-    #panel-badge {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 12px;
-      margin-top: 4px;
-      display: inline-block;
-      text-transform: uppercase;
-    }
-    #panel-body {
-      padding: 20px 22px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    #panel-content {
-      font-size: 13.5px;
-      line-height: 1.75;
-      color: #cbd5e1;
-      white-space: pre-wrap;
-    }
-
-    /* ─── DIAGNOSTICS & SYSTEM METERS ─── */
-    .diag-metric-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    .metric-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .metric-val {
-      font-size: 28px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      color: var(--cyan-bright);
-    }
-    .meter-bar {
-      height: 8px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .meter-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--cyan), #6366f1);
-      width: 0%;
-      transition: width 0.4s ease;
-    }
-
-    /* ─── APPROVAL MODAL CARDS ─── */
-    .approval-card {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .btn-approve {
-      background: #10b981; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; cursor: pointer;
-    }
-    .btn-reject {
-      background: #ef4444; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <!-- STARFIELD BACKGROUND & THREE.JS GALAXY -->
-  <canvas id="starfield"></canvas>
+  <!-- Fullscreen 3D Force Graph Container -->
+  <div id="bg-stars"></div>
   <div id="graph-container"></div>
 
-  <!-- TOP HUD BAR -->
-  <div id="hud-topbar">
-    <div class="hud-brand">
-      <span class="status-dot"></span>
-      <span class="logo-text">J.A.R.V.I.S.</span>
-      <div class="status-pill" id="global-status-pill">
-        <span class="status-dot"></span>
-        <span id="global-status-text">SYSTEM ONLINE</span>
+  <!-- ═══════════════════════════════════════════════════════════════
+       LEFT SIDEBAR (MATCHING REFERENCE SCREENSHOT)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="left-panel">
+    <!-- OS Header -->
+    <div class="os-header-card">
+      <div class="os-title">J.A.R.V.I.S. OS</div>
+      <div class="os-subtitle" id="graph-stats-text">Loading galaxy nodes...</div>
+      <button class="btn-2d-toggle" id="btn-dimension-toggle" onclick="toggleDimensionMode()">
+        <span>⟲</span> <span id="dim-text">Fit 3D Galaxy</span>
+      </button>
+    </div>
+
+    <!-- Search Brain Input -->
+    <div class="search-box-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-box" id="search-brain-input" placeholder="Search the brain..." oninput="handleBrainSearch(this.value)">
+    </div>
+
+    <!-- INSPECTOR Block -->
+    <div class="hud-box">
+      <div class="hud-box-title">INSPECTOR</div>
+      <div class="inspector-text" id="inspector-hint">
+        Click a node to focus it — only that node and its connections light up, and you can read its note here. Shift-click a second node to trace the path.
+      </div>
+      <div id="inspector-details">
+        <div class="inspector-node-title" id="node-detail-title">Note Title</div>
+        <div class="inspector-node-excerpt" id="node-detail-excerpt">Content will appear here.</div>
       </div>
     </div>
 
-    <!-- HUD NAVIGATION TABS -->
-    <div class="hud-tabs">
-      <button class="hud-tab-btn active" data-deck="conversation">✦ Chat</button>
-      <button class="hud-tab-btn" data-deck="vision">⚡ Vision</button>
-      <button class="hud-tab-btn" data-deck="galaxy">🌌 Galaxy</button>
-      <button class="hud-tab-btn" data-deck="skills">🛠 Skills (150)</button>
-      <button class="hud-tab-btn" data-deck="diagnostics">📊 Diagnostics</button>
-      <button class="hud-tab-btn" data-deck="safety">🛡 Safety</button>
-      <button class="hud-tab-btn" data-deck="memory">🧠 Memory</button>
-    </div>
-
-    <!-- ACTIONS -->
-    <div class="hud-top-actions">
-      <button class="stop-btn" id="emergency-stop-btn">🛑 STOP</button>
-      <button class="btn-action" id="compact-toggle-btn" title="Toggle Compact Orb Mode">⛶ Compact</button>
-    </div>
-  </div>
-
-  <!-- HOLOGRAPHIC J.A.R.V.I.S. ORB WIDGET -->
-  <div id="hud-orb-anchor">
-    <canvas id="jarvis-orb-canvas"></canvas>
-    <div class="orb-controls">
-      <button class="orb-btn" id="orb-listen-btn">🎙 Mic</button>
-      <button class="orb-btn" id="orb-vision-btn">⚡ Vision</button>
-      <button class="orb-btn" id="orb-pause-btn">⏸ Pause</button>
-    </div>
-  </div>
-
-  <!-- MAIN COMMAND DECK PANELS -->
-  <div id="hud-command-deck">
-
-    <!-- 1. CONVERSATION DECK -->
-    <div class="deck-panel active" id="deck-conversation">
-      <div id="conversation-transcript">
-        <div class="chat-bubble assistant">
-          Good evening, sir. J.A.R.V.I.S. is fully initialized and standing by across all systems. How may I be of service?
-        </div>
+    <!-- TOP HUBS Block -->
+    <div class="hud-box">
+      <div class="hud-box-title">
+        <span>TOP HUBS</span>
+        <span style="font-size:9px; color:var(--cyan); cursor:pointer;" onclick="buildHubsList()">REFRESH</span>
       </div>
-      <div id="chat-bar-wrap">
-        <input type="text" id="chat-input" placeholder="Give an instruction, ask about your notes, or click the mic…" autocomplete="off" />
-        <button class="mic-btn" id="mic-toggle-btn" title="Voice Input">🎙</button>
-        <button class="send-btn" id="send-msg-btn" title="Send Instruction">➜</button>
+      <div class="hub-list" id="top-hubs-list">
+        <!-- Dynamically injected from graph groups -->
       </div>
     </div>
 
-    <!-- 2. SCREEN VISION DECK -->
-    <div class="deck-panel" id="deck-vision">
-      <div class="deck-header">
-        <div class="deck-title">⚡ Screen Perception & Multimodal Vision</div>
-        <div class="vision-actions">
-          <button class="btn-action primary" id="btn-cap-full">📷 Full Screen</button>
-          <button class="btn-action" id="btn-cap-window">🪟 Active Window</button>
-          <button class="btn-action" id="btn-cap-region">📐 Region</button>
-          <button class="btn-action" id="btn-ann-highlight">✦ Highlight Box</button>
-        </div>
+    <!-- FORCES Sliders -->
+    <div class="hud-box">
+      <div class="hud-box-title">FORCES</div>
+      <div class="force-row">
+        <span>Repel</span>
+        <input type="range" class="force-slider" id="force-repel" min="-400" max="-30" value="-150" oninput="updateGraphForces()">
       </div>
-      <div class="vision-grid">
-        <div class="vision-preview-card">
-          <div class="vision-img-frame">
-            <img id="vision-preview-img" src="" alt="Click a capture button above to inspect screen." />
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);" id="vision-meta-label">Sensor standby. No active capture.</div>
-        </div>
-        <div class="vision-analysis-card">
-          <div style="font-weight:700;font-size:13px;color:var(--cyan-bright);">Neural Vision Analysis</div>
-          <div class="vision-analysis-text" id="vision-analysis-result">
-            Screen vision is ready. Capture any screen area or ask "What is on my screen?" to diagnose errors, identify controls, or extract text.
-          </div>
-        </div>
+      <div class="force-row">
+        <span>Link length</span>
+        <input type="range" class="force-slider" id="force-length" min="20" max="220" value="70" oninput="updateGraphForces()">
       </div>
     </div>
 
-    <!-- 3. GALAXY CONTROLS OVERLAY -->
-    <div class="deck-panel" id="deck-galaxy" style="background:transparent;border:none;box-shadow:none;">
-      <div id="galaxy-nav-hud">
-        <button class="galaxy-btn" id="gal-zoom-in">＋ Zoom In</button>
-        <button class="galaxy-btn" id="gal-zoom-out">－ Zoom Out</button>
-        <button class="galaxy-btn" id="gal-reset-cam">↺ Reset Constellation</button>
-        <button class="galaxy-btn" id="gal-organize-btn">✦ Organize Archives</button>
-      </div>
-    </div>
-
-    <!-- 4. SKILLS CATALOGUE DECK (150 SKILLS) -->
-    <div class="deck-panel" id="deck-skills">
-      <div class="deck-header">
-        <div class="deck-title">🛠 150-Skill System & Capabilities Catalogue</div>
-        <div style="font-size:12px;color:var(--text-muted);" id="skills-count-badge">150 Skills Registered</div>
-      </div>
-      <div class="skills-search-bar">
-        <input type="text" id="skill-search-input" placeholder="Search skills by keyword, category, or ID…" style="flex:1;height:40px;background:rgba(15,23,42,0.8);border:1px solid var(--border);border-radius:10px;padding:0 14px;color:#fff;" />
-      </div>
-      <div class="skills-filter-pills" id="skills-filter-container">
-        <span class="pill active" data-cat="ALL">All Categories</span>
-        <span class="pill" data-cat="A">Voice (15)</span>
-        <span class="pill" data-cat="B">Vision (15)</span>
-        <span class="pill" data-cat="C">Desktop (20)</span>
-        <span class="pill" data-cat="D">Files (20)</span>
-        <span class="pill" data-cat="E">Web (15)</span>
-        <span class="pill" data-cat="F">Memory (15)</span>
-        <span class="pill" data-cat="G">Productivity (15)</span>
-        <span class="pill" data-cat="H">Coding (15)</span>
-        <span class="pill" data-cat="I">Diagnostics (15)</span>
-        <span class="pill" data-cat="J">Creative (5)</span>
-      </div>
-      <div class="skills-grid" id="skills-list-grid"></div>
-    </div>
-
-    <!-- 5. DIAGNOSTICS DECK -->
-    <div class="deck-panel" id="deck-diagnostics">
-      <div class="deck-header">
-        <div class="deck-title">📊 PC Diagnostics & Hardware Telemetry</div>
-        <button class="btn-action primary" id="refresh-diag-btn">↺ Refresh Telemetry</button>
-      </div>
-      <div class="diag-metric-grid">
-        <div class="metric-card">
-          <div style="font-size:11px;color:var(--text-muted);">CPU Utilization</div>
-          <div class="metric-val" id="diag-cpu-val">--%</div>
-          <div class="meter-bar"><div class="meter-fill" id="diag-cpu-bar"></div></div>
-        </div>
-        <div class="metric-card">
-          <div style="font-size:11px;color:var(--text-muted);">RAM Utilization</div>
-          <div class="metric-val" id="diag-ram-val">--%</div>
-          <div class="meter-bar"><div class="meter-fill" id="diag-ram-bar"></div></div>
-        </div>
-        <div class="metric-card">
-          <div style="font-size:11px;color:var(--text-muted);">Storage Free Space</div>
-          <div class="metric-val" id="diag-disk-val">-- GB</div>
-          <div class="meter-bar"><div class="meter-fill" id="diag-disk-bar"></div></div>
-        </div>
-      </div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--cyan);">Active Desktop Windows</div>
-      <div id="diag-windows-list" style="flex:1;overflow-y:auto;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:var(--font-mono);font-size:12px;"></div>
-    </div>
-
-    <!-- 6. SAFETY & APPROVALS DECK -->
-    <div class="deck-panel" id="deck-safety">
-      <div class="deck-header">
-        <div class="deck-title">🛡 Safety, Permissions & Audit History</div>
-        <button class="stop-btn" id="deck-stop-btn">🛑 GLOBAL STOP</button>
-      </div>
-      <div style="font-weight:700;font-size:13px;color:var(--amber);margin-bottom:10px;">Pending Action Confirmations</div>
-      <div id="safety-approvals-list" style="min-height:80px;margin-bottom:16px;">
-        <div style="font-size:12px;color:var(--text-muted);">No actions currently awaiting approval.</div>
-      </div>
-      <div style="font-weight:700;font-size:13px;color:var(--cyan);margin-bottom:8px;">Recent Audit Events</div>
-      <div id="safety-audit-list" style="flex:1;overflow-y:auto;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:var(--font-mono);font-size:11px;line-height:1.6;"></div>
-    </div>
-
-    <!-- 7. MEMORY & CONTEXT DECK -->
-    <div class="deck-panel" id="deck-memory">
-      <div class="deck-header">
-        <div class="deck-title">🧠 Personal Knowledge & User Context Profile</div>
-        <button class="btn-action" id="btn-export-memory">📦 Export Archive</button>
-      </div>
-      <div style="flex:1;overflow-y:auto;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:10px;padding:16px;white-space:pre-wrap;font-size:12.5px;line-height:1.7;color:#cbd5e1;" id="memory-profile-text">
-        Loading User Context Profile...
-      </div>
-    </div>
-
-  </div>
-
-  <!-- SIDE PANEL FOR NOTE INSPECTION -->
-  <div id="side-panel">
-    <div id="panel-header">
-      <div>
-        <div id="panel-title">Note Title</div>
-        <div id="panel-badge">Operations</div>
-      </div>
-      <button class="icon-btn" id="panel-close-btn">✕</button>
-    </div>
-    <div id="panel-body">
-      <div id="panel-content">Note content preview...</div>
+    <!-- DISPLAY Selector -->
+    <div class="hud-box">
+      <div class="hud-box-title">DISPLAY</div>
+      <select class="display-select" id="display-mode-select" onchange="changeDisplayMode(this.value)">
+        <option value="macro">Hub & Spoke Cluster</option>
+        <option value="free">Unrestricted 3D Constellation</option>
+        <option value="focus">Focused Solitary Mode</option>
+      </select>
     </div>
   </div>
 
-  <!-- SCRIPTS -->
-  <script src="graph-data.js"></script>
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
-  <script src="orb.js"></script>
+  <!-- ═══════════════════════════════════════════════════════════════
+       TOP CENTER CONTROLS (FIT & VIEW)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="top-controls">
+    <button class="cam-btn fit" onclick="fitGraphView()">
+      <span>⟲</span> Fit
+    </button>
+    <button class="cam-btn" onclick="rotateCamera(0.01)">
+      <span>↻</span> Orbit
+    </button>
+    <button class="cam-btn" onclick="resetToTopView()">
+      <span>↑</span> Top View
+    </button>
+  </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+       TOP RIGHT FILTER LEGEND
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="filter-panel">
+    <div style="font-size:10px; font-weight:700; color:var(--text-dim); letter-spacing:1px; margin-bottom:4px;">FILTER</div>
+    <div id="filter-items-container">
+      <!-- Dynamically populated categories -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       RIGHT SIDE: PURE STANDALONE TRANSPARENT ORB (NO BOX/CARD)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="orb-right-section">
+    <!-- PURE STANDALONE TRANSPARENT ORB -->
+    <div id="orb-standalone-wrap" onclick="toggleOrbActiveState()" title="Click to Activate / Pause J.A.R.V.I.S.">
+      <canvas id="jarvis-orb-canvas" width="250" height="250"></canvas>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="orb-status-badge">
+      <div class="orb-status-online" id="orb-online-indicator">ONLINE</div>
+      <div>|</div>
+      <div class="orb-status-model" id="orb-model-indicator">✦ GEMINI 3.5</div>
+    </div>
+
+    <!-- Mode Selector Buttons -->
+    <div class="orb-modes-row">
+      <button class="orb-mode-pill active" onclick="switchOrbMode('ring')">RING</button>
+      <button class="orb-mode-pill" onclick="switchOrbMode('cube')">CUBE</button>
+      <button class="orb-mode-pill" onclick="switchOrbMode('face')">FACE</button>
+    </div>
+
+    <!-- Action Toggles Stacked Below Orb -->
+    <div class="orb-actions-stack">
+      <div class="action-pill" id="pill-eyes" onclick="toggleActionPill('eyes')">
+        <span>EYES</span>
+        <span class="state-val" id="val-eyes">off</span>
+      </div>
+      <div class="action-pill" id="pill-holo" onclick="toggleActionPill('holo')">
+        <span>HOLO</span>
+        <span class="state-val" id="val-holo">off</span>
+      </div>
+      <div class="action-pill" id="pill-focus" onclick="toggleActionPill('focus')">
+        <span>FOCUS</span>
+        <span class="state-val" id="val-focus">off</span>
+      </div>
+      <div class="action-pill" id="pill-reflex" onclick="toggleActionPill('reflex')">
+        <span>REFLEX</span>
+        <span class="state-val" id="val-reflex">hidden</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BOTTOM CENTER FLOATING PROMPT BAR & CONVERSATION OVERLAY
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="bottom-prompt-deck">
+    <!-- Assistant Response Card (Grounded citations & butler persona) -->
+    <div id="assistant-response-card">
+      <div class="resp-header">
+        <span id="resp-speaker-tag">✦ J.A.R.V.I.S.</span>
+        <span style="font-size:10px; color:var(--text-dim); cursor:pointer;" onclick="hideResponseCard()">✕ Close</span>
+      </div>
+      <div class="resp-body" id="resp-text">
+        Good evening, sir. All neural circuits and indexed knowledge graphs are operational.
+      </div>
+      <div class="resp-sources" id="resp-sources-list"></div>
+    </div>
+
+    <!-- Floating Pill Input Bar -->
+    <div class="pill-input-bar">
+      <input
+        type="text"
+        id="user-prompt-input"
+        placeholder='Ask "remind me...", "good morning", "show..."'
+        onkeydown="if(event.key === 'Enter') submitPrompt();"
+      />
+      <div class="prompt-actions-row">
+        <!-- Mic Button -->
+        <button class="prompt-icon-btn mic-btn" id="btn-mic-toggle" onclick="toggleMicrophone()" title="Voice Input (Speech-to-Text)">
+          🎙
+        </button>
+        <!-- Remember / Note Quick Capture -->
+        <button class="prompt-icon-btn" onclick="quickRememberPrompt()" title="Remember Note (writes to captures/)">
+          📝
+        </button>
+        <!-- Screen Vision Inspect -->
+        <button class="prompt-icon-btn" onclick="quickVisionInspect()" title="Inspect Screen with Multimodal Vision">
+          🖥
+        </button>
+        <!-- Skills Catalogue Drawer -->
+        <button class="prompt-icon-btn" onclick="openDrawer('skills-drawer')" title="Browse All 150 Capabilities">
+          💡
+        </button>
+        <!-- Safety & Approvals Drawer -->
+        <button class="prompt-icon-btn" onclick="openDrawer('safety-drawer')" title="Security & Approval Gates">
+          🛡
+        </button>
+        <!-- Diagnostics Drawer -->
+        <button class="prompt-icon-btn" onclick="openDrawer('diag-drawer')" title="Hardware Telemetry">
+          ⚙
+        </button>
+        <!-- Send Button -->
+        <button class="prompt-send-btn" onclick="submitPrompt()" title="Send Command">
+          ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE-OUT DRAWERS (SKILLS, SAFETY, DIAGNOSTICS)
+       ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Skills Drawer -->
+  <div class="drawer-overlay" id="skills-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">⚡ 150-Skill Registry</div>
+      <button class="drawer-close" onclick="closeDrawers()">✕</button>
+    </div>
+    <div class="drawer-content">
+      <input type="text" class="drawer-search" placeholder="Filter capabilities..." oninput="filterSkillsList(this.value)">
+      <div id="drawer-skills-container">Loading verified skills...</div>
+    </div>
+  </div>
+
+  <!-- Safety & Approvals Drawer -->
+  <div class="drawer-overlay" id="safety-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">🛡 Permission & Safety Broker</div>
+      <button class="drawer-close" onclick="closeDrawers()">✕</button>
+    </div>
+    <div class="drawer-content">
+      <div style="display:flex; justify-content:space-between; margin-bottom:14px;">
+        <button style="background:var(--crimson); color:#fff; border:none; padding:8px 14px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="triggerGlobalStop()">
+          🛑 EMERGENCY STOP
+        </button>
+        <button style="background:var(--emerald); color:#030712; border:none; padding:8px 14px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="triggerGlobalResume()">
+          ▶ RESUME
+        </button>
+      </div>
+      <div class="hud-box-title">PENDING APPROVALS</div>
+      <div id="drawer-approvals-container" style="margin-bottom:16px;">No pending actions.</div>
+      <div class="hud-box-title">RECENT AUDIT LOG</div>
+      <div id="drawer-audit-container" style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <!-- Diagnostics Drawer -->
+  <div class="drawer-overlay" id="diag-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">⚙ System Diagnostics</div>
+      <button class="drawer-close" onclick="closeDrawers()">✕</button>
+    </div>
+    <div class="drawer-content" id="drawer-diag-content">
+      Loading live hardware telemetry...
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       JAVASCRIPT APPLICATION LOGIC
+       ═══════════════════════════════════════════════════════════════ -->
   <script>
-    // ═══════════════════════════════════════════
-    //  INITIALIZE HOLOGRAPHIC ORB
-    // ═══════════════════════════════════════════
-    const orb = new JarvisOrb('jarvis-orb-canvas', { width: 200, height: 200 });
-
-    // ═══════════════════════════════════════════
-    //  STARFIELD BACKGROUND
-    // ═══════════════════════════════════════════
-    (function initStarfield() {
-      const canvas = document.getElementById('starfield');
-      const ctx = canvas.getContext('2d');
-      let stars = [];
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        stars = [];
-        for (let i = 0; i < 400; i++) {
-          stars.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            r: Math.random() * 1.3 + 0.2,
-            a: Math.random() * 0.7 + 0.3,
-            speed: Math.random() * 0.0015 + 0.0005,
-            phase: Math.random() * Math.PI * 2
-          });
-        }
-      }
-      function draw(t) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const s of stars) {
-          const twinkle = 0.5 + 0.5 * Math.sin(t * s.speed * 2 + s.phase);
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${s.a * (0.4 + 0.6 * twinkle)})`;
-          ctx.fill();
-        }
-        requestAnimationFrame(draw);
-      }
-      window.addEventListener('resize', resize);
-      resize();
-      requestAnimationFrame(draw);
-    })();
-
-    // ═══════════════════════════════════════════
-    //  3D KNOWLEDGE GALAXY WITH FREE ORBIT
-    // ═══════════════════════════════════════════
-    const GROUP_COLORS = {
-      captures: '#06b6d4', personal: '#f43f5e', finance: '#f59e0b',
-      marketing: '#ec4899', operations: '#3b82f6', products: '#10b981',
-      team: '#a78bfa', 'apex-logistics': '#38bdf8'
-    };
-    function groupColor(g) {
-      if (!g) return '#64748b';
-      if (GROUP_COLORS[g]) return GROUP_COLORS[g];
-      let hash = 0;
-      for (let i = 0; i < g.length; i++) hash = g.charCodeAt(i) + ((hash << 5) - hash);
-      return `hsl(${Math.abs(hash) % 360}, 80%, 62%)`;
-    }
-
-    const neighborMap = new Map();
-    const nodeById = new Map();
-
-    function populateAdjacency() {
-      neighborMap.clear();
-      nodeById.clear();
-      GRAPH.nodes.forEach(n => {
-        neighborMap.set(n.id, new Set());
-        nodeById.set(n.id, n);
-      });
-      GRAPH.links.forEach(l => {
-        const s = typeof l.source === 'object' ? l.source.id : l.source;
-        const t = typeof l.target === 'object' ? l.target.id : l.target;
-        neighborMap.get(s)?.add(t);
-        neighborMap.get(t)?.add(s);
-      });
-    }
-    populateAdjacency();
-
-    let selectedNode = null;
-    let highlightNodes = new Set();
-    let highlightLinks = new Set();
-
-    const Graph = ForceGraph3D()(document.getElementById('graph-container'))
-      .graphData(GRAPH)
-      .backgroundColor('rgba(0,0,0,0)')
-      .showNavInfo(false)
-      .nodeId('id')
-      .nodeLabel(n => `<div style="background:rgba(8,12,24,0.9);padding:6px 12px;border-radius:8px;border:1px solid ${groupColor(n.group)};"><strong>${n.label}</strong><br/><span style="color:${groupColor(n.group)}">${n.is_hub ? '✦ Central Hub' : n.group}</span></div>`)
-      .nodeVal(n => n.is_hub ? 22 : 3 + (neighborMap.get(n.id)?.size || 0) * 0.75)
-      .nodeThreeObject(n => {
-        const conns = neighborMap.get(n.id)?.size || 0;
-        const color = groupColor(n.group);
-        const isHighlighted = highlightNodes.has(n.id);
-        const isSelected = selectedNode && selectedNode.id === n.id;
-        const group = new THREE.Group();
-
-        if (n.is_hub) {
-          const hubR = 11;
-          const geo = new THREE.SphereGeometry(hubR, 32, 32);
-          const mat = new THREE.MeshPhongMaterial({
-            color: color, emissive: color,
-            emissiveIntensity: isSelected ? 1.4 : 0.75,
-            shininess: 90, transparent: true, opacity: 0.96
-          });
-          group.add(new THREE.Mesh(geo, mat));
-
-          const coronaGeo = new THREE.SphereGeometry(hubR * 1.6, 24, 24);
-          const coronaMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.2 });
-          group.add(new THREE.Mesh(coronaGeo, coronaMat));
-
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          ctx.font = '800 48px Inter, sans-serif';
-          const tw = ctx.measureText(n.label).width;
-          canvas.width = tw + 30; canvas.height = 68;
-          ctx.font = '800 48px Inter, sans-serif';
-          ctx.fillStyle = '#fff';
-          ctx.shadowColor = color; ctx.shadowBlur = 12;
-          ctx.fillText(n.label.toUpperCase(), 15, 48);
-
-          const spriteMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true });
-          const sprite = new THREE.Sprite(spriteMat);
-          sprite.scale.set((canvas.width / canvas.height) * 11, 11, 1);
-          sprite.position.set(0, hubR + 10, 0);
-          group.add(sprite);
-          return group;
-        }
-
-        const r = 3.2 + conns * 0.55;
-        const geo = new THREE.SphereGeometry(r, 24, 24);
-        const mat = new THREE.MeshPhongMaterial({
-          color: color, emissive: color,
-          emissiveIntensity: isSelected ? 1.1 : (isHighlighted ? 0.7 : 0.35),
-          transparent: true, opacity: 0.92
-        });
-        group.add(new THREE.Mesh(geo, mat));
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        ctx.font = '600 38px Inter, sans-serif';
-        const tw = ctx.measureText(n.label).width;
-        canvas.width = tw + 20; canvas.height = 54;
-        ctx.font = '600 38px Inter, sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.fillText(n.label, 10, 38);
-
-        const spriteMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true });
-        const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set((canvas.width / canvas.height) * 6.5, 6.5, 1);
-        sprite.position.set(0, r + 5, 0);
-        group.add(sprite);
-        return group;
-      })
-      .linkColor(l => {
-        if (l.type === 'backbone') return 'rgba(251, 191, 36, 0.55)';
-        if (l.type === 'spoke') {
-          const s = nodeById.get(typeof l.source === 'object' ? l.source.id : l.source);
-          return (s ? groupColor(s.group) : '#38bdf8') + '55';
-        }
-        return 'rgba(255, 255, 255, 0.08)';
-      })
-      .linkWidth(l => l.type === 'backbone' ? 2.5 : (l.type === 'spoke' ? 1.4 : 0.5))
-      .onNodeClick(node => handleNodeClick(node))
-      .d3AlphaDecay(0.015)
-      .d3VelocityDecay(0.2);
-
-    // Expansive celestial spacing
-    Graph.d3Force('charge').strength(n => (n && n.is_hub) ? -2400 : -650).distanceMax(700);
-    Graph.d3Force('link')
-      .distance(l => l.type === 'backbone' ? 250 : (l.type === 'spoke' ? 80 : 145))
-      .strength(l => l.type === 'backbone' ? 0.7 : (l.type === 'spoke' ? 0.85 : 0.06));
-
-    Graph.cameraPosition({ x: 0, y: 0, z: 460 });
-
-    // Enable complete free orbit, zoom, and panning
-    const controls = Graph.controls();
-    if (controls) {
-      controls.enablePan = true;
-      controls.enableZoom = true;
-      controls.enableRotate = true;
-      controls.minDistance = 20;
-      controls.maxDistance = 2800;
-    }
-
-    function handleNodeClick(node) {
-      selectedNode = node;
-      highlightNodes.clear();
-      highlightLinks.clear();
-      highlightNodes.add(node.id);
-      neighborMap.get(node.id)?.forEach(nId => highlightNodes.add(nId));
-
-      Graph.nodeThreeObject(Graph.nodeThreeObject());
-      Graph.linkColor(Graph.linkColor());
-
-      const dist = 110;
-      Graph.cameraPosition(
-        { x: (node.x || 0) + dist * 0.45, y: (node.y || 0) + dist * 0.3, z: (node.z || 0) + dist * 0.8 },
-        { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-        1400
-      );
-      openSidePanel(node);
-    }
-
-    // ═══════════════════════════════════════════
-    //  SIDE PANEL
-    // ═══════════════════════════════════════════
-    const sidePanel = document.getElementById('side-panel');
-    const panelTitle = document.getElementById('panel-title');
-    const panelBadge = document.getElementById('panel-badge');
-    const panelContent = document.getElementById('panel-content');
-    const panelCloseBtn = document.getElementById('panel-close-btn');
-
-    function openSidePanel(node) {
-      panelTitle.textContent = node.label;
-      panelBadge.textContent = node.group;
-      panelBadge.style.background = groupColor(node.group) + '33';
-      panelBadge.style.color = groupColor(node.group);
-      panelContent.textContent = node.excerpt || "No archived text available.";
-      sidePanel.classList.add('open');
-    }
-    panelCloseBtn.addEventListener('click', () => sidePanel.classList.remove('open'));
-
-    // ═══════════════════════════════════════════
-    //  HUD DECK NAVIGATION
-    // ═══════════════════════════════════════════
-    const tabBtns = document.querySelectorAll('.hud-tab-btn');
-    const deckPanels = document.querySelectorAll('.deck-panel');
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const deckId = `deck-${btn.dataset.deck}`;
-        deckPanels.forEach(p => {
-          p.classList.toggle('active', p.id === deckId);
-        });
-        if (btn.dataset.deck === 'skills') loadSkillsCatalogue();
-        if (btn.dataset.deck === 'diagnostics') loadDiagnostics();
-        if (btn.dataset.deck === 'safety') loadSafetyAudit();
-        if (btn.dataset.deck === 'memory') loadMemoryProfile();
-      });
-    });
-
-    // ═══════════════════════════════════════════
-    //  CONVERSATION & AUDIO SYSTEM
-    // ═══════════════════════════════════════════
-    const transcriptEl = document.getElementById('conversation-transcript');
-    const chatInput = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-msg-btn');
-    const micBtn = document.getElementById('mic-toggle-btn');
-
-    function addMessage(text, role = 'assistant', nodes = []) {
-      const bubble = document.createElement('div');
-      bubble.className = `chat-bubble ${role}`;
-      bubble.textContent = text;
-
-      if (nodes && nodes.length > 0) {
-        const tagContainer = document.createElement('div');
-        tagContainer.className = 'citation-tags';
-        nodes.forEach(nId => {
-          const n = nodeById.get(nId);
-          if (!n) return;
-          const tag = document.createElement('span');
-          tag.className = 'citation-tag';
-          tag.textContent = `✦ [${nId}] ${n.label}`;
-          tag.onclick = () => handleNodeClick(n);
-          tagContainer.appendChild(tag);
-        });
-        bubble.appendChild(tagContainer);
-      }
-
-      transcriptEl.appendChild(bubble);
-      transcriptEl.scrollTop = transcriptEl.scrollHeight;
-    }
-
-    async function sendChat(question) {
-      if (!question.trim()) return;
-      addMessage(question, 'user');
-      chatInput.value = '';
-      orb.setState('thinking', 'ANALYZING');
-
-      try {
-        const resp = await fetch('/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question })
-        });
-        const data = await resp.json();
-        orb.setState('speaking', 'SPEAKING');
-        addMessage(data.answer, 'assistant', data.nodes);
-        speakResponse(data.answer);
-
-        if (data.nodes && data.nodes.length > 0) {
-          const top = nodeById.get(data.nodes[0]);
-          if (top) handleNodeClick(top);
-        }
-      } catch (err) {
-        orb.setState('error', 'FAULT');
-        addMessage(`Communication anomaly: ${err.message}`, 'assistant');
-      }
-    }
-
-    sendBtn.addEventListener('click', () => sendChat(chatInput.value));
-    chatInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendChat(chatInput.value);
-    });
-
-    // ═══════════════════════════════════════════
-    //  SPEECH RECOGNITION & TTS
-    // ═══════════════════════════════════════════
-    let recognition = null;
+    // ── Global State ──
+    let orbInstance = null;
     let isListening = false;
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let speechRecognition = null;
+    let audioContext = null;
+    let audioAnalyser = null;
+    let allSkillsData = [];
+    let isOrbActive = true;
+    let wakeWordActive = true;
 
-    if (SpeechRec) {
-      recognition = new SpeechRec();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        isListening = true;
-        micBtn.classList.add('listening');
-        orb.setState('listening', 'LISTENING');
-      };
-
-      recognition.onresult = e => {
-        const text = e.results[0][0].transcript;
-        chatInput.value = text;
-        sendChat(text);
-      };
-
-      recognition.onerror = () => {
-        isListening = false;
-        micBtn.classList.remove('listening');
-        orb.setState('idle', 'ONLINE');
-      };
-
-      recognition.onend = () => {
-        isListening = false;
-        micBtn.classList.remove('listening');
-        orb.setState('idle', 'ONLINE');
-      };
+    // ── Color Theme Mapping ──
+    const GROUP_COLORS = {
+      'finance': '#f59e0b',
+      'marketing': '#ec4899',
+      'operations': '#00e5ff',
+      'products': '#10b981',
+      'team': '#8b5cf6',
+      'captures': '#38bdf8',
+      'apex-logistics': '#f97316',
+      'personal': '#14b8a6',
+    };
+    function getGroupColor(group) {
+      return GROUP_COLORS[group] || '#64748b';
     }
 
-    micBtn.addEventListener('click', () => {
-      if (!recognition) {
-        alert("Speech recognition requires Google Chrome or Chromium Edge.");
-        return;
-      }
-      if (isListening) {
-        recognition.stop();
-      } else {
-        recognition.start();
+    // ── 1. Initialize Holographic Standalone Vector Orb ──
+    window.addEventListener('DOMContentLoaded', () => {
+      orbInstance = new JarvisOrb('jarvis-orb-canvas', { width: 250, height: 250 });
+      orbInstance.setState('idle', 'STANDBY');
+
+      initThreeForceGraph();
+      buildHubsList();
+      buildFilterLegend();
+      initSpeechRecognition();
+      loadSkillsCatalogue();
+      loadSystemDiagnostics();
+
+      // Check wake phrase detector
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        startContinuousWakeDetector();
       }
     });
 
-    let currentAudio = null;
-    async function speakResponse(text) {
-      if (currentAudio) currentAudio.pause();
-      window.speechSynthesis?.cancel();
+    // ── 2. Three.js ForceGraph3D Setup ──
+    let Graph = null;
+    function initThreeForceGraph() {
+      if (typeof GRAPH === 'undefined' || !GRAPH.nodes) return;
 
-      try {
-        const resp = await fetch('/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        });
-        const contentType = resp.headers.get("content-type");
-        if (contentType && contentType.includes("audio")) {
-          const blob = await resp.blob();
-          const url = URL.createObjectURL(blob);
-          currentAudio = new Audio(url);
-          currentAudio.onplay = () => orb.setState('speaking', 'SPEAKING');
-          currentAudio.onended = () => orb.setState('idle', 'ONLINE');
-          currentAudio.play();
-          return;
-        }
-      } catch (e) {}
+      document.getElementById('graph-stats-text').innerText =
+        `${GRAPH.nodes.length} notes · ${GRAPH.links.length} connections`;
 
-      // Browser TTS Fallback
-      if ('speechSynthesis' in window) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.pitch = 0.95; u.rate = 1.05;
-        u.onstart = () => orb.setState('speaking', 'SPEAKING');
-        u.onend = () => orb.setState('idle', 'ONLINE');
-        window.speechSynthesis.speak(u);
+      Graph = ForceGraph3D()(document.getElementById('graph-container'))
+        .graphData(GRAPH)
+        .backgroundColor('rgba(0,0,0,0)')
+        .showNavInfo(false)
+        .nodeId('id')
+        .nodeLabel(n => `<div style="background:rgba(8,12,24,0.92);padding:6px 12px;border-radius:8px;border:1px solid ${getGroupColor(n.group)};"><strong>${n.label}</strong><br/><span style="color:${getGroupColor(n.group)}">${n.is_hub ? '✦ Sector Hub' : n.group}</span></div>`)
+        .nodeColor(n => getGroupColor(n.group))
+        .nodeVal(n => (n.is_hub ? 9 : 3))
+        .linkColor(() => 'rgba(255,255,255,0.08)')
+        .linkWidth(1.2)
+        .linkDirectionalParticles(2)
+        .linkDirectionalParticleSpeed(0.005)
+        .onNodeClick(node => focusOnNode(node));
+
+      // Relax camera distance restrictions for unrestricted zooming
+      const controls = Graph.controls();
+      if (controls) {
+        controls.minDistance = 20;
+        controls.maxDistance = 3000;
       }
     }
 
-    // ═══════════════════════════════════════════
-    //  SCREEN VISION DECK
-    // ═══════════════════════════════════════════
-    const previewImg = document.getElementById('vision-preview-img');
-    const visionMeta = document.getElementById('vision-meta-label');
-    const visionResult = document.getElementById('vision-analysis-result');
-    let lastCapturePath = null;
+    // ── 3. Node Focusing & Inspection ──
+    function focusOnNode(node) {
+      if (!node) return;
+      document.getElementById('inspector-hint').style.display = 'none';
+      const details = document.getElementById('inspector-details');
+      details.style.display = 'block';
+      document.getElementById('node-detail-title').innerText = node.label;
+      document.getElementById('node-detail-excerpt').innerText = node.excerpt || 'No excerpt available for this note.';
 
-    async function captureScreenMode(mode) {
-      orb.setState('executing', 'CAPTURING');
-      visionMeta.textContent = `Capturing ${mode}…`;
-      try {
-        const resp = await fetch('/vision/capture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode })
-        });
-        const data = await resp.json();
-        if (data.status === 'success') {
-          previewImg.src = data.base64;
-          lastCapturePath = data.file_path;
-          visionMeta.textContent = `${data.mode.toUpperCase()} (${data.width}x${data.height}) | Active: ${data.window_title}`;
-          orb.setState('idle', 'ONLINE');
-          // Automatically run analysis
-          analyzeScreen(data.base64);
-        } else {
-          visionMeta.textContent = `Capture error: ${data.error}`;
-          orb.setState('error', 'FAULT');
-        }
-      } catch (err) {
-        visionMeta.textContent = `Capture error: ${err.message}`;
-        orb.setState('error', 'FAULT');
-      }
+      // Smooth camera fly-to
+      const dist = 120;
+      const camPos = {
+        x: node.x + (node.x > 0 ? dist : -dist),
+        y: node.y + 40,
+        z: node.z + dist
+      };
+      Graph.cameraPosition(camPos, node, 1500);
     }
 
-    async function analyzeScreen(imageB64) {
-      visionResult.textContent = "Analyzing screen with neural vision...";
-      orb.setState('thinking', 'PERCEIVING');
-      try {
-        const resp = await fetch('/vision/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imageB64, prompt: "Identify active windows, controls, dialogs, error messages, and layout elements." })
-        });
-        const data = await resp.json();
-        visionResult.textContent = data.analysis || "Analysis complete.";
-        orb.setState('idle', 'ONLINE');
-      } catch (err) {
-        visionResult.textContent = `Analysis error: ${err.message}`;
-        orb.setState('error', 'FAULT');
-      }
-    }
-
-    document.getElementById('btn-cap-full').addEventListener('click', () => captureScreenMode('fullscreen'));
-    document.getElementById('btn-cap-window').addEventListener('click', () => captureScreenMode('active_window'));
-    document.getElementById('btn-cap-region').addEventListener('click', () => captureScreenMode('region'));
-    document.getElementById('btn-ann-highlight').addEventListener('click', async () => {
-      if (!lastCapturePath) return alert("Please capture a screen first.");
-      const resp = await fetch('/vision/annotate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_path: lastCapturePath,
-          annotations: [
-            { type: 'box', x: 260, y: 180, w: 340, h: 90, label: 'Focused Control' },
-            { type: 'step', x: 230, y: 180, step_num: 1, text: 'Click Here' }
-          ]
-        })
+    // ── 4. Build Hubs and Filter Panels ──
+    function buildHubsList() {
+      if (typeof GRAPH === 'undefined' || !GRAPH.nodes) return;
+      const counts = {};
+      GRAPH.nodes.forEach(n => {
+        counts[n.group] = (counts[n.group] || 0) + 1;
       });
-      const data = await resp.json();
-      if (data.status === 'success') {
-        previewImg.src = data.base64;
-      }
-    });
 
-    // ═══════════════════════════════════════════
-    //  150-SKILL MANAGER
-    // ═══════════════════════════════════════════
-    let allSkills = [];
-    async function loadSkillsCatalogue() {
-      const resp = await fetch('/skills');
-      const data = await resp.json();
-      allSkills = data.skills || [];
-      document.getElementById('skills-count-badge').textContent = `${allSkills.length} Skills Registered`;
-      renderSkills(allSkills);
+      const listContainer = document.getElementById('top-hubs-list');
+      listContainer.innerHTML = '';
+
+      Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).forEach(([grp, cnt]) => {
+        const item = document.createElement('div');
+        item.className = 'hub-item';
+        item.innerHTML = `
+          <div class="hub-left">
+            <div class="hub-dot" style="background:${getGroupColor(grp)}; box-shadow: 0 0 6px ${getGroupColor(grp)};"></div>
+            <span>${grp.replace('-', ' ').toUpperCase()}</span>
+          </div>
+          <span class="hub-count">${cnt}</span>
+        `;
+        item.onclick = () => flyToHubGroup(grp);
+        listContainer.appendChild(item);
+      });
     }
 
-    function renderSkills(skills) {
-      const grid = document.getElementById('skills-list-grid');
-      grid.innerHTML = '';
+    function buildFilterLegend() {
+      if (typeof GRAPH === 'undefined' || !GRAPH.nodes) return;
+      const counts = {};
+      GRAPH.nodes.forEach(n => {
+        counts[n.group] = (counts[n.group] || 0) + 1;
+      });
+
+      const container = document.getElementById('filter-items-container');
+      container.innerHTML = '';
+      Object.entries(counts).forEach(([grp, cnt]) => {
+        const item = document.createElement('div');
+        item.className = 'filter-item';
+        item.innerHTML = `
+          <div class="filter-left">
+            <div class="filter-dot" style="background:${getGroupColor(grp)}"></div>
+            <span>${grp.charAt(0).toUpperCase() + grp.slice(1)}</span>
+          </div>
+          <span class="filter-count">${cnt}</span>
+        `;
+        item.onclick = () => flyToHubGroup(grp);
+        container.appendChild(item);
+      });
+    }
+
+    function flyToHubGroup(grp) {
+      if (!Graph || !GRAPH.nodes) return;
+      const hubNode = GRAPH.nodes.find(n => n.group === grp && n.is_hub) || GRAPH.nodes.find(n => n.group === grp);
+      if (hubNode) {
+        focusOnNode(hubNode);
+      }
+    }
+
+    // ── 5. Brain Search Filter ──
+    function handleBrainSearch(query) {
+      if (!query || !Graph) return;
+      const q = query.toLowerCase().trim();
+      const match = GRAPH.nodes.find(n => n.label.toLowerCase().includes(q));
+      if (match) {
+        focusOnNode(match);
+      }
+    }
+
+    // ── 6. Forces Sliders ──
+    function updateGraphForces() {
+      if (!Graph) return;
+      const repelVal = parseFloat(document.getElementById('force-repel').value);
+      const lengthVal = parseFloat(document.getElementById('force-length').value);
+      Graph.d3Force('charge').strength(repelVal);
+      Graph.d3Force('link').distance(lengthVal);
+      Graph.numDimensions(3);
+    }
+
+    function fitGraphView() {
+      if (Graph) Graph.zoomToFit(1200, 100);
+    }
+
+    function resetToTopView() {
+      if (Graph) Graph.cameraPosition({ x: 0, y: 700, z: 0 }, { x: 0, y: 0, z: 0 }, 1400);
+    }
+
+    function rotateCamera(delta) {
+      if (!Graph) return;
+      const cp = Graph.cameraPosition();
+      const r = Math.hypot(cp.x, cp.z);
+      const angle = Math.atan2(cp.z, cp.x) + delta;
+      Graph.cameraPosition({ x: r * Math.cos(angle), y: cp.y, z: r * Math.sin(angle) }, { x: 0, y: 0, z: 0 }, 300);
+    }
+
+    function toggleDimensionMode() {
+      fitGraphView();
+    }
+
+    // ── 7. Standalone Orb Interactions ──
+    function toggleOrbActiveState() {
+      isOrbActive = !isOrbActive;
+      if (isOrbActive) {
+        orbInstance.setState('listening', 'LISTENING');
+        startSpeechListening();
+      } else {
+        orbInstance.setState('paused', 'PAUSED');
+        stopSpeechListening();
+      }
+    }
+
+    function switchOrbMode(mode) {
+      document.querySelectorAll('.orb-mode-pill').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      if (mode === 'cube') {
+        Graph.numDimensions(3);
+        fitGraphView();
+      } else if (mode === 'ring') {
+        fitGraphView();
+      }
+    }
+
+    function toggleActionPill(action) {
+      const pill = document.getElementById(`pill-${action}`);
+      const val = document.getElementById(`val-${action}`);
+      const isNowActive = !pill.classList.contains('active');
+      pill.classList.toggle('active', isNowActive);
+
+      if (action === 'eyes') {
+        val.innerText = isNowActive ? 'active' : 'off';
+        if (isNowActive) quickVisionInspect();
+      } else if (action === 'holo') {
+        val.innerText = isNowActive ? 'on' : 'off';
+        if (isNowActive) rotateCamera(0.05);
+      } else if (action === 'focus') {
+        val.innerText = isNowActive ? 'focused' : 'off';
+      } else if (action === 'reflex') {
+        val.innerText = isNowActive ? 'active' : 'hidden';
+      }
+    }
+
+    // ── 8. Voice & Speech Synthesis (British Butler Persona) ──
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      speechRecognition = new SpeechRecognition();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = 'en-GB';
+
+      speechRecognition.onstart = () => {
+        isListening = true;
+        document.getElementById('btn-mic-toggle').classList.add('listening');
+        if (orbInstance) orbInstance.setState('listening', 'LISTENING');
+      };
+
+      speechRecognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('user-prompt-input').value = text;
+        submitPrompt();
+      };
+
+      speechRecognition.onerror = () => {
+        stopSpeechListening();
+      };
+
+      speechRecognition.onend = () => {
+        stopSpeechListening();
+      };
+    }
+
+    function toggleMicrophone() {
+      if (isListening) {
+        stopSpeechListening();
+      } else {
+        startSpeechListening();
+      }
+    }
+
+    function startSpeechListening() {
+      if (speechRecognition) {
+        try { speechRecognition.start(); } catch (e) {}
+      }
+    }
+
+    function stopSpeechListening() {
+      isListening = false;
+      document.getElementById('btn-mic-toggle').classList.remove('listening');
+      if (orbInstance && isOrbActive) orbInstance.setState('idle', 'ONLINE');
+      if (speechRecognition) {
+        try { speechRecognition.stop(); } catch (e) {}
+      }
+    }
+
+    function startContinuousWakeDetector() {
+      // Local lightweight wake-phrase trigger for "JARVIS"
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) return;
+      const wakeRec = new SpeechRec();
+      wakeRec.continuous = true;
+      wakeRec.interimResults = true;
+      wakeRec.lang = 'en-GB';
+
+      wakeRec.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          const phrase = e.results[i][0].transcript.toLowerCase();
+          if (phrase.includes('jarvis')) {
+            if (!isOrbActive || !isListening) {
+              isOrbActive = true;
+              orbInstance.setState('listening', 'JARVIS ACTIVATED');
+              startSpeechListening();
+            }
+          }
+        }
+      };
+
+      wakeRec.onerror = () => { setTimeout(() => wakeRec.start(), 2000); };
+      wakeRec.onend = () => { setTimeout(() => wakeRec.start(), 2000); };
+      try { wakeRec.start(); } catch (e) {}
+    }
+
+    // ── 9. Prompt Submission & Execution Pipeline ──
+    async function submitPrompt() {
+      const input = document.getElementById('user-prompt-input');
+      const q = input.value.trim();
+      if (!q) return;
+
+      input.value = '';
+      orbInstance.setState('thinking', 'REASONING');
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q, brain: 'gemini-3.5' })
+        });
+        const data = await res.json();
+        showResponseCard(data);
+
+        // Speak aloud using SpeechSynthesis with British Butler preference
+        speakText(data.answer);
+
+        // If nodes cited, fly camera to primary source
+        if (data.nodes && data.nodes.length > 0 && Graph) {
+          const targetNode = GRAPH.nodes.find(n => n.id === data.nodes[0]);
+          if (targetNode) focusOnNode(targetNode);
+        }
+
+        orbInstance.setState('speaking', 'SPEAKING');
+      } catch (e) {
+        orbInstance.setState('error', 'ERROR');
+        showResponseCard({ answer: `I encountered an unexpected glitch, sir: ${e.message}`, nodes: [] });
+      }
+    }
+
+    function showResponseCard(data) {
+      const card = document.getElementById('assistant-response-card');
+      const body = document.getElementById('resp-text');
+      const sources = document.getElementById('resp-sources-list');
+
+      body.innerText = data.answer || 'Response received.';
+      sources.innerHTML = '';
+
+      if (data.nodes && data.nodes.length > 0) {
+        data.nodes.forEach(nid => {
+          const node = GRAPH.nodes.find(n => n.id === nid);
+          if (node) {
+            const pill = document.createElement('div');
+            pill.className = 'source-pill';
+            pill.innerText = `📄 ${node.label}`;
+            pill.onclick = () => focusOnNode(node);
+            sources.appendChild(pill);
+          }
+        });
+      }
+      card.style.display = 'flex';
+    }
+
+    function hideResponseCard() {
+      document.getElementById('assistant-response-card').style.display = 'none';
+      if (orbInstance) orbInstance.setState('idle', 'ONLINE');
+    }
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 0.95;
+
+      const voices = window.speechSynthesis.getVoices();
+      const ukVoice = voices.find(v => v.lang.includes('en-GB') || v.name.includes('UK') || v.name.includes('British'));
+      if (ukVoice) utter.voice = ukVoice;
+
+      utter.onend = () => {
+        if (orbInstance && isOrbActive) orbInstance.setState('idle', 'ONLINE');
+      };
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ── 10. Drawers & Quick Actions ──
+    function openDrawer(id) {
+      closeDrawers();
+      document.getElementById(id).classList.add('open');
+      if (id === 'safety-drawer') refreshSafetyData();
+      if (id === 'diag-drawer') loadSystemDiagnostics();
+    }
+
+    function closeDrawers() {
+      document.querySelectorAll('.drawer-overlay').forEach(d => d.classList.remove('open'));
+    }
+
+    async function loadSkillsCatalogue() {
+      try {
+        const res = await fetch('/skills');
+        const data = await res.json();
+        allSkillsData = data.skills || [];
+        renderSkillsDrawer(allSkillsData);
+      } catch (e) {}
+    }
+
+    function renderSkillsDrawer(skills) {
+      const container = document.getElementById('drawer-skills-container');
+      container.innerHTML = '';
       skills.forEach(s => {
         const card = document.createElement('div');
-        card.className = 'skill-card';
+        card.className = 'skill-card-item';
         card.innerHTML = `
-          <div>
-            <div class="skill-card-top">
-              <span class="skill-name">#${s.num} ${s.name}</span>
-              <span class="risk-badge ${s.risk}">${s.risk.replace('_', ' ')}</span>
-            </div>
-            <div class="skill-desc">${s.desc}</div>
+          <div class="skill-card-top">
+            <span class="skill-card-name">#${s.num} ${s.name}</span>
+            <span class="skill-risk-badge">${s.risk}</span>
           </div>
-          <div class="skill-footer">
-            <span style="font-size:10px;font-family:var(--font-mono);color:var(--text-dim);">${s.id}</span>
-            <button class="btn-action" style="padding:2px 8px;font-size:10.5px;" onclick="runSingleSkill('${s.id}')">Run Skill</button>
-          </div>
+          <div class="skill-card-desc">${s.desc}</div>
+          <button class="skill-run-btn" onclick="executeSkillDirectly('${s.id}')">Execute</button>
         `;
-        grid.appendChild(card);
+        container.appendChild(card);
       });
     }
 
-    window.runSingleSkill = async function(skillId) {
-      orb.setState('executing', 'RUNNING');
-      const resp = await fetch('/skills/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skill_id: skillId, params: {} })
-      });
-      const res = await resp.json();
-      orb.setState('idle', 'ONLINE');
-      alert(`Skill execution result: ${JSON.stringify(res, null, 2)}`);
-    };
-
-    // Category filter
-    document.querySelectorAll('.skills-filter-pills .pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        document.querySelectorAll('.skills-filter-pills .pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        const cat = pill.dataset.cat;
-        if (cat === 'ALL') renderSkills(allSkills);
-        else renderSkills(allSkills.filter(s => s.cat === cat));
-      });
-    });
-
-    document.getElementById('skill-search-input').addEventListener('input', e => {
-      const q = e.target.value.toLowerCase().trim();
-      renderSkills(allSkills.filter(s => s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)));
-    });
-
-    // ═══════════════════════════════════════════
-    //  DIAGNOSTICS TELEMETRY
-    // ═══════════════════════════════════════════
-    async function loadDiagnostics() {
-      const resp = await fetch('/diagnostics');
-      const data = await resp.json();
-      const sys = data.report?.system || {};
-      document.getElementById('diag-cpu-val').textContent = `${data.report?.bottleneck_assessment?.cpu_state === 'High Load' ? '78%' : '14%'}`;
-      document.getElementById('diag-cpu-bar').style.width = '24%';
-      document.getElementById('diag-ram-val').textContent = `${sys.ram_used_percent || 48}%`;
-      document.getElementById('diag-ram-bar').style.width = `${sys.ram_used_percent || 48}%`;
-      document.getElementById('diag-disk-val').textContent = `${sys.disk_free_gb || 120} GB`;
-      document.getElementById('diag-disk-bar').style.width = `${sys.disk_used_percent || 60}%`;
-
-      // Load windows
-      const winResp = await fetch('/windows');
-      const winData = await winResp.json();
-      const winList = document.getElementById('diag-windows-list');
-      const wins = winData.windows || [];
-      winList.innerHTML = wins.length > 0 
-        ? wins.map(w => `<div>[HWND ${w.hwnd}] ${w.title} (${w.width}x${w.height})</div>`).join('')
-        : '<div>No top-level external application windows found.</div>';
+    function filterSkillsList(q) {
+      const query = q.toLowerCase();
+      const filtered = allSkillsData.filter(s =>
+        s.name.toLowerCase().includes(query) || s.desc.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
+      );
+      renderSkillsDrawer(filtered);
     }
-    document.getElementById('refresh-diag-btn').addEventListener('click', loadDiagnostics);
 
-    // ═══════════════════════════════════════════
-    //  SAFETY, APPROVALS & AUDIT
-    // ═══════════════════════════════════════════
-    async function loadSafetyAudit() {
-      const appResp = await fetch('/approvals');
-      const appData = await appResp.json();
-      const appContainer = document.getElementById('safety-approvals-list');
-      const apps = appData.approvals || [];
-      appContainer.innerHTML = apps.length > 0
-        ? apps.map(a => `
-          <div class="approval-card">
-            <div><strong>${a.skill_id}</strong>: ${a.description}</div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn-approve" onclick="resolveApp('${a.id}', true)">Approve</button>
-              <button class="btn-reject" onclick="resolveApp('${a.id}', false)">Reject</button>
+    async function executeSkillDirectly(sid) {
+      orbInstance.setState('executing', 'EXECUTING');
+      try {
+        const res = await fetch('/skills/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skill_id: sid, params: {} })
+        });
+        const data = await res.json();
+        showResponseCard({ answer: `Executed skill '${sid}': ${JSON.stringify(data)}`, nodes: [] });
+      } catch (e) {
+        showResponseCard({ answer: `Execution failed: ${e.message}`, nodes: [] });
+      }
+    }
+
+    async function refreshSafetyData() {
+      try {
+        const appRes = await fetch('/approvals');
+        const appData = await appRes.json();
+        const appContainer = document.getElementById('drawer-approvals-container');
+        appContainer.innerHTML = appData.approvals && appData.approvals.length > 0
+          ? appData.approvals.map(a => `
+            <div style="background:rgba(245,158,11,0.1); border:1px solid var(--amber); padding:8px; border-radius:6px; margin-bottom:6px;">
+              <strong>${a.description}</strong><br/>
+              <button onclick="resolveApproval('${a.id}', true)" style="background:var(--emerald);color:#000;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:4px;">Approve</button>
+              <button onclick="resolveApproval('${a.id}', false)" style="background:var(--crimson);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:4px;">Reject</button>
             </div>
-          </div>
-        `).join('')
-        : '<div style="font-size:12px;color:var(--text-muted);">No actions currently awaiting approval.</div>';
+          `).join('')
+          : '<div style="color:var(--text-dim);">No pending approvals.</div>';
 
-      const auditResp = await fetch('/audit');
-      const auditData = await auditResp.json();
-      const auditList = document.getElementById('safety-audit-list');
-      auditList.innerHTML = (auditData.audit || []).map(entry => `
-        <div>[${new Date(entry.timestamp * 1000).toLocaleTimeString()}] <strong>${entry.status}</strong>: ${entry.description}</div>
-      `).join('');
+        const audRes = await fetch('/audit');
+        const audData = await audRes.json();
+        const audContainer = document.getElementById('drawer-audit-container');
+        audContainer.innerHTML = audData.audit
+          ? audData.audit.slice(0, 15).map(a => `<div>[${a.status}] ${a.description}</div>`).join('')
+          : '';
+      } catch (e) {}
     }
 
-    window.resolveApp = async function(id, approved) {
+    async function resolveApproval(id, approved) {
       await fetch('/approvals/resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approval_id: id, approved })
+        body: JSON.stringify({ approval_id: id, approved: approved })
       });
-      loadSafetyAudit();
-    };
-
-    // Emergency Stop
-    async function triggerStop() {
-      const resp = await fetch('/stop', { method: 'POST' });
-      const data = await resp.json();
-      orb.setState('error', 'STOPPED');
-      document.getElementById('global-status-pill').className = 'status-pill stopped';
-      document.getElementById('global-status-text').textContent = 'EMERGENCY STOP';
-      addMessage("Global emergency stop engaged. All active automation halted.", 'assistant');
-    }
-    document.getElementById('emergency-stop-btn').addEventListener('click', triggerStop);
-    document.getElementById('deck-stop-btn').addEventListener('click', triggerStop);
-
-    // ═══════════════════════════════════════════
-    //  MEMORY PROFILE
-    // ═══════════════════════════════════════════
-    async function loadMemoryProfile() {
-      const resp = await fetch('/profile');
-      const data = await resp.json();
-      document.getElementById('memory-profile-text').textContent = data.profile || "No profile context loaded.";
+      refreshSafetyData();
     }
 
-    // ═══════════════════════════════════════════
-    //  FREE GALAXY CAMERA TOOLPAD
-    // ═══════════════════════════════════════════
-    document.getElementById('gal-zoom-in').addEventListener('click', () => {
-      const pos = Graph.cameraPosition();
-      Graph.cameraPosition({ x: pos.x * 0.7, y: pos.y * 0.7, z: pos.z * 0.7 }, null, 600);
-    });
-    document.getElementById('gal-zoom-out').addEventListener('click', () => {
-      const pos = Graph.cameraPosition();
-      Graph.cameraPosition({ x: pos.x * 1.4, y: pos.y * 1.4, z: pos.z * 1.4 }, null, 600);
-    });
-    document.getElementById('gal-reset-cam').addEventListener('click', () => {
-      Graph.cameraPosition({ x: 0, y: 0, z: 460 }, { x: 0, y: 0, z: 0 }, 1000);
-    });
-    document.getElementById('gal-organize-btn').addEventListener('click', async () => {
-      const resp = await fetch('/organize', { method: 'POST' });
-      const data = await resp.json();
-      alert(`Archives organized: ${data.organized?.length || 0} files sorted.`);
-    });
+    async function triggerGlobalStop() {
+      await fetch('/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      if (orbInstance) orbInstance.setState('error', 'STOPPED');
+      showResponseCard({ answer: "Global emergency stop engaged, sir. All automated processes halted.", nodes: [] });
+      refreshSafetyData();
+    }
 
-    // ═══════════════════════════════════════════
-    //  COMPACT MODE TOGGLE
-    // ═══════════════════════════════════════════
-    let isCompact = false;
-    document.getElementById('compact-toggle-btn').addEventListener('click', () => {
-      isCompact = !isCompact;
-      document.getElementById('hud-command-deck').style.display = isCompact ? 'none' : 'flex';
-      document.getElementById('hud-topbar').style.display = isCompact ? 'none' : 'flex';
-      document.getElementById('hud-orb-anchor').classList.toggle('compact', isCompact);
-      // Native desktop shell toggle if running inside WebView2
-      if (window.pywebview?.api?.toggle_compact_mode) {
-        window.pywebview.api.toggle_compact_mode();
-      }
-    });
+    async function triggerGlobalResume() {
+      await fetch('/resume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      if (orbInstance) orbInstance.setState('idle', 'ONLINE');
+      showResponseCard({ answer: "Systems resumed, sir. Automated operations restored.", nodes: [] });
+      refreshSafetyData();
+    }
 
-    // Quick Orb buttons
-    document.getElementById('orb-listen-btn').addEventListener('click', () => micBtn.click());
-    document.getElementById('orb-vision-btn').addEventListener('click', () => {
-      document.querySelector('[data-deck="vision"]').click();
-      captureScreenMode('fullscreen');
-    });
-    document.getElementById('orb-pause-btn').addEventListener('click', async () => {
-      const resp = await fetch('/pause', { method: 'POST' });
-      const data = await resp.json();
-      orb.setState(data.paused ? 'paused' : 'idle', data.paused ? 'PAUSED' : 'ONLINE');
-    });
+    async function loadSystemDiagnostics() {
+      try {
+        const res = await fetch('/diagnostics');
+        const data = await res.json();
+        const sys = data.report.system;
+        document.getElementById('drawer-diag-content').innerHTML = `
+          <div style="font-size:12px; line-height:1.7;">
+            <div><strong>OS:</strong> ${sys.os} ${sys.os_release} (${sys.machine})</div>
+            <div><strong>CPU:</strong> ${sys.cpu_cores} Cores @ ~${sys.cpu_freq_mhz} MHz</div>
+            <div><strong>RAM Usage:</strong> ${sys.ram_used_percent}% (${sys.available_ram_gb} GB free of ${sys.total_ram_gb} GB)</div>
+            <div><strong>Primary Storage:</strong> ${sys.disk_free_gb} GB free of ${sys.disk_total_gb} GB</div>
+            <div><strong>Status:</strong> ${data.report.bottleneck_assessment.recommendation}</div>
+          </div>
+        `;
+      } catch (e) {}
+    }
+
+    async function quickRememberPrompt() {
+      const noteText = prompt("Enter the note or fact for J.A.R.V.I.S. to record in memory:");
+      if (!noteText) return;
+      try {
+        const res = await fetch('/remember', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: noteText })
+        });
+        const data = await res.json();
+        showResponseCard({ answer: data.confirmation || "Note stored securely in memory, sir.", nodes: [] });
+      } catch (e) {}
+    }
+
+    async function quickVisionInspect() {
+      orbInstance.setState('thinking', 'INSPECTING');
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: "Inspect what is on my screen right now and explain visible controls and errors.", brain: 'gemini-3.5' })
+        });
+        const data = await res.json();
+        showResponseCard(data);
+      } catch (e) {}
+    }
   </script>
 </body>
 </html>

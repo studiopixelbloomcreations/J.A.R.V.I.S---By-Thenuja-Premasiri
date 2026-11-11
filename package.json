@@ -1,0 +1,21 @@
+{
+  "name": "jarvis-desktop-intelligence",
+  "version": "2.0.0",
+  "description": "J.A.R.V.I.S. Personal Desktop Intelligence OS & 3D Knowledge Galaxy",
+  "private": true,
+  "scripts": {
+    "dev": "python server.py",
+    "start": "python server.py",
+    "build": "python build.py",
+    "test": "python -m unittest tests/test_jarvis.py"
+  },
+  "keywords": [
+    "jarvis",
+    "ai-assistant",
+    "3d-knowledge-graph",
+    "voice-intelligence",
+    "desktop-automation"
+  ],
+  "author": "Thenuja Premasiri",
+  "license": "MIT"
+}
