@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
   <script src="graph-data.js"></script>
   <script src="orb.js"></script>
@@ -1184,6 +1185,9 @@
     let currentBrain = 'gemini-3.5'; // 'gemini-3.5' (Text mode) or 'gemini-live' (Voice streaming)
     let isFishAudioEnabled = true;
     let silenceTimer = null;
+    let pendingGreetingTimer = null;
+    window.isJarvisSpeaking = false;
+    let isRequestInProgress = false;
     let currentAudioElement = null;
     let allSkillsData = [];
     let isOrbActive = false; // Passive halo on start
@@ -1240,31 +1244,33 @@
         .nodeId('id')
         .nodeLabel(n => `<div style="background:rgba(8,12,24,0.92);padding:6px 12px;border-radius:8px;border:1px solid ${getGroupColor(n.group)};"><strong>${n.label}</strong><br/><span style="color:${getGroupColor(n.group)}">${n.is_hub ? '📁 Folder Sector Hub' : n.group}</span></div>`)
         .nodeThreeObject(node => {
-          const group = new THREE.Group();
+          const T = window.THREE || (typeof THREE !== 'undefined' ? THREE : null);
+          if (!T) return;
+          const group = new T.Group();
           const isHub = node.is_hub;
           const radius = isHub ? 14 : 5.5;
           const colorHex = getGroupColor(node.group);
 
           // 1. Central Glowing Orb Sphere
-          const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
-          const sphereMat = new THREE.MeshLambertMaterial({
+          const sphereGeo = new T.SphereGeometry(radius, 16, 16);
+          const sphereMat = new T.MeshLambertMaterial({
             color: colorHex,
             transparent: true,
             opacity: isHub ? 0.95 : 0.85
           });
-          const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+          const sphereMesh = new T.Mesh(sphereGeo, sphereMat);
           group.add(sphereMesh);
 
           // If main folder hub orb, add an outer holographic aura ring
           if (isHub) {
-            const auraGeo = new THREE.SphereGeometry(radius + 4, 12, 12);
-            const auraMat = new THREE.MeshBasicMaterial({
+            const auraGeo = new T.SphereGeometry(radius + 4, 12, 12);
+            const auraMat = new T.MeshBasicMaterial({
               color: colorHex,
               wireframe: true,
               transparent: true,
               opacity: 0.35
             });
-            group.add(new THREE.Mesh(auraGeo, auraMat));
+            group.add(new T.Mesh(auraGeo, auraMat));
           }
 
           // 2. High-resolution Attached Note Name Label (Always Visible & Faces Camera)
@@ -1288,17 +1294,21 @@
           ctx.strokeStyle = colorHex;
           ctx.lineWidth = isHub ? 2.2 : 1;
           ctx.beginPath();
-          ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+          if (ctx.roundRect) {
+            ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+          } else {
+            ctx.rect(pillX, pillY, pillW, pillH);
+          }
           ctx.fill();
           ctx.stroke();
 
           ctx.fillStyle = isHub ? '#00ffff' : '#f8fafc';
           ctx.fillText(cleanLabel, 192, 37);
 
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.minFilter = THREE.LinearFilter;
-          const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
-          const sprite = new THREE.Sprite(spriteMat);
+          const texture = new T.CanvasTexture(canvas);
+          texture.minFilter = T.LinearFilter;
+          const spriteMat = new T.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+          const sprite = new T.Sprite(spriteMat);
           const sW = isHub ? 52 : 36;
           const sH = isHub ? 10 : 7;
           sprite.scale.set(sW, sH, 1);
@@ -1725,6 +1735,9 @@
       };
 
       speechRec.onresult = (e) => {
+        // If Jarvis is currently speaking through audio output, ignore mic input to avoid loopback
+        if (window.isJarvisSpeaking) return;
+
         let interimText = '';
         let finalText = '';
 
@@ -1739,10 +1752,31 @@
 
         const liveText = (finalText || interimText).trim();
         if (!liveText) return;
-        const lower = liveText.toLowerCase();
+        const lowerAll = liveText.toLowerCase();
+
+        // ══════════════════════════════════════════════════════════════════
+        // 0. VERBAL BRAIN SWITCHING (Universal - handles both modes)
+        // ══════════════════════════════════════════════════════════════════
+        if (lowerAll.includes('switch to gemini live') || lowerAll.includes('switch brain to gemini live') || lowerAll.includes('activate gemini live') || lowerAll.includes('switch to live')) {
+          if (currentBrain !== 'gemini-live') {
+            if (pendingGreetingTimer) { clearTimeout(pendingGreetingTimer); pendingGreetingTimer = null; }
+            clearTimeout(silenceTimer);
+            setBrainMode('gemini-live');
+            speakText("Switching brain to Gemini Live, sir. Voice streaming active.");
+            return;
+          }
+        } else if (lowerAll.includes('switch to gemini 3.5') || lowerAll.includes('switch brain to gemini 3.5') || lowerAll.includes('switch to text') || lowerAll.includes('switch back')) {
+          if (currentBrain !== 'gemini-3.5') {
+            if (pendingGreetingTimer) { clearTimeout(pendingGreetingTimer); pendingGreetingTimer = null; }
+            clearTimeout(silenceTimer);
+            setBrainMode('gemini-3.5');
+            speakText("Returning to Gemini 3.5 text model, sir.");
+            return;
+          }
+        }
 
         // Check for wake word "Jarvis"
-        const wakeWordMatch = lower.match(/\b(hey\s+)?jarvis\b/i);
+        const wakeWordMatch = lowerAll.match(/\b(hey\s+)?jarvis\b/i);
 
         // ══════════════════════════════════════════════════════════════════
         // CASE A: PASSIVE MONITORING (Waiting for "JARVIS")
@@ -1759,6 +1793,7 @@
 
             const command = liveText.slice(wakeWordMatch.index + wakeWordMatch[0].length).replace(/^[,:\s]+/, '').trim();
             if (command.length > 0) {
+              if (pendingGreetingTimer) { clearTimeout(pendingGreetingTimer); pendingGreetingTimer = null; }
               if (currentBrain === 'gemini-3.5') {
                 const input = document.getElementById('user-prompt-input');
                 if (input) input.value = command;
@@ -1769,11 +1804,20 @@
               clearTimeout(silenceTimer);
               const delay = computeSilenceDelay(command);
               silenceTimer = setTimeout(() => {
-                handleSpokenInput(command);
+                if (!isRequestInProgress) handleSpokenInput(command);
               }, delay);
             } else {
-              updateLiveTranscriptBubble('✦ JARVIS: At your service, sir. How may I assist?');
-              speakText("At your service, sir. How may I assist you?");
+              // User has ONLY uttered the wake word so far.
+              // Wait 1.4s debounced so we do NOT barge in if they are about to speak their thought.
+              updateLiveTranscriptBubble('✦ JARVIS: Listening...');
+              if (pendingGreetingTimer) clearTimeout(pendingGreetingTimer);
+              pendingGreetingTimer = setTimeout(() => {
+                pendingGreetingTimer = null;
+                if (isAssistantActive && !window.isJarvisSpeaking && !isRequestInProgress) {
+                  updateLiveTranscriptBubble('✦ JARVIS: At your service, sir. How may I assist?');
+                  speakText("At your service, sir. How may I assist you?");
+                }
+              }, 1400);
             }
             return;
           }
@@ -1790,6 +1834,12 @@
         // ══════════════════════════════════════════════════════════════════
         resetActiveTimer();
 
+        // Any new speech immediately cancels pending greeting so Jarvis never speaks over the user
+        if (pendingGreetingTimer) {
+          clearTimeout(pendingGreetingTimer);
+          pendingGreetingTimer = null;
+        }
+
         // Strip leading wake word if spoken repeatedly
         let activeQuery = liveText;
         if (wakeWordMatch && wakeWordMatch.index < 10) {
@@ -1804,22 +1854,6 @@
           updateLiveTranscriptBubble(activeQuery || 'Listening... Speak naturally, sir.');
         }
 
-        // Verbal Brain Switching
-        const lowerQuery = activeQuery.toLowerCase();
-        if (lowerQuery.includes('switch to gemini live') || lowerQuery.includes('switch brain to gemini live') || lowerQuery.includes('activate gemini live') || lowerQuery.includes('switch to live')) {
-          if (currentBrain !== 'gemini-live') {
-            setBrainMode('gemini-live');
-            speakText("Switching brain to Gemini Live, sir. Voice streaming active.");
-            return;
-          }
-        } else if (lowerQuery.includes('switch to gemini 3.5') || lowerQuery.includes('switch brain to gemini 3.5') || lowerQuery.includes('switch to text') || lowerQuery.includes('switch back')) {
-          if (currentBrain !== 'gemini-3.5') {
-            setBrainMode('gemini-3.5');
-            speakText("Returning to Gemini 3.5 text model, sir.");
-            return;
-          }
-        }
-
         // Natural Human Cadence Silence Detection (No cutting off mid-sentence)
         clearTimeout(silenceTimer);
         const queryToSubmit = (finalText || interimText).trim();
@@ -1831,8 +1865,12 @@
             if (m && m.index < 10) {
               finalClean = queryToSubmit.slice(m.index + m[0].length).replace(/^[,:\s]+/, '').trim() || queryToSubmit;
             }
-            handleSpokenInput(finalClean);
+            if (finalClean.length > 0 && !isRequestInProgress) {
+              handleSpokenInput(finalClean);
+            }
           }, delay);
+        }
+      };
         }
       };
 
@@ -1970,6 +2008,7 @@
 
     async function submitPromptWithText(q) {
       if (!q) return;
+      isRequestInProgress = true;
       orbInstance.setState('thinking', currentBrain === 'gemini-live' ? 'STREAMING' : 'REASONING');
 
       try {
@@ -1985,14 +2024,15 @@
           setBrainMode(data.switch_brain);
         }
 
-        // Show response card
-        if (currentBrain === 'gemini-3.5') {
+        // Always show response card if vision capture was performed or in gemini-3.5
+        if (data.vision_capture || currentBrain === 'gemini-3.5') {
           showResponseCard(data);
-        } else {
+        }
+        if (currentBrain === 'gemini-live') {
           updateLiveTranscriptBubble(`✦ JARVIS: ${data.answer}`);
         }
 
-        // Speak aloud using Fish Audio neural British butler voice
+        // Speak aloud using neural voice (Charon for Gemini Live, Fish Audio for Gemini 3.5)
         await speakText(data.answer);
 
         // Focus camera on primary source node if cited
@@ -2003,6 +2043,8 @@
       } catch (e) {
         orbInstance.setState('error', 'ERROR');
         showResponseCard({ answer: `I encountered an unexpected glitch, sir: ${e.message}`, nodes: [] });
+      } finally {
+        isRequestInProgress = false;
       }
     }
 
@@ -2013,6 +2055,29 @@
 
       body.innerText = data.answer || 'Response received.';
       sources.innerHTML = '';
+
+      // Screen Vision Preview Thumbnail
+      let visionBox = document.getElementById('resp-vision-container');
+      if (!visionBox) {
+        visionBox = document.createElement('div');
+        visionBox.id = 'resp-vision-container';
+        card.insertBefore(visionBox, sources);
+      }
+      if (data.vision_capture && data.vision_capture.base64) {
+        visionBox.style.display = 'block';
+        visionBox.innerHTML = `
+          <div style="margin: 8px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-cyan); background: rgba(5,8,15,0.95); position: relative;">
+            <div style="padding: 5px 10px; font-size: 11px; color: var(--cyan); background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,229,255,0.2);">
+              <span>🖥 SCREEN VISION CAPTURE · ${data.vision_capture.window_title || 'Desktop'}</span>
+              <span>${data.vision_capture.width}×${data.vision_capture.height}</span>
+            </div>
+            <img src="${data.vision_capture.base64}" alt="Screen Vision" style="width: 100%; max-height: 220px; object-fit: contain; cursor: pointer; display: block;" onclick="window.open(this.src)" title="Click to inspect full resolution capture"/>
+          </div>
+        `;
+      } else {
+        visionBox.style.display = 'none';
+        visionBox.innerHTML = '';
+      }
 
       if (data.nodes && data.nodes.length > 0) {
         data.nodes.forEach(nid => {
@@ -2066,10 +2131,12 @@
           currentAudioElement = new Audio(audioUrl);
 
           currentAudioElement.onplay = () => {
+            window.isJarvisSpeaking = true;
             if (orbInstance) orbInstance.setState('speaking', 'SPEAKING');
           };
 
           currentAudioElement.onended = () => {
+            window.isJarvisSpeaking = false;
             currentAudioElement = null;
             if (orbInstance) {
               orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? (currentBrain === 'gemini-live' ? 'GEMINI LIVE' : 'JARVIS ACTIVE') : 'MONITORING');
@@ -2077,6 +2144,7 @@
           };
 
           currentAudioElement.onerror = () => {
+            window.isJarvisSpeaking = false;
             speakWithBrowserSynthesis(text);
           };
 
@@ -2086,7 +2154,7 @@
           speakWithBrowserSynthesis(text);
         }
       } catch (err) {
-        console.warn("Fish Audio network error, falling back to browser synthesis:", err);
+        console.warn("Audio synthesis error, falling back to browser synthesis:", err);
         speakWithBrowserSynthesis(text);
       }
     }
@@ -2100,6 +2168,25 @@
       const voices = window.speechSynthesis.getVoices();
       const ukVoice = voices.find(v => v.lang.includes('en-GB') || v.name.includes('UK') || v.name.includes('British') || v.name.includes('George'));
       if (ukVoice) utter.voice = ukVoice;
+
+      utter.onstart = () => {
+        window.isJarvisSpeaking = true;
+        if (orbInstance) orbInstance.setState('speaking', 'SPEAKING');
+      };
+
+      utter.onend = () => {
+        window.isJarvisSpeaking = false;
+        if (orbInstance && isOrbActive) {
+          orbInstance.setState(currentBrain === 'gemini-live' ? 'listening' : 'idle', currentBrain === 'gemini-live' ? 'LIVE' : 'ONLINE');
+        }
+      };
+
+      utter.onerror = () => {
+        window.isJarvisSpeaking = false;
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
 
       utter.onstart = () => {
         if (orbInstance) orbInstance.setState('speaking', 'SPEAKING');
@@ -2256,15 +2343,24 @@
 
     async function quickVisionInspect() {
       orbInstance.setState('thinking', 'INSPECTING');
+      updateLiveTranscriptBubble('✦ Scanning screen with multimodal vision...');
       try {
         const res = await fetch('/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: "Inspect what is on my screen right now and explain visible controls and errors.", brain: 'gemini-3.5' })
+          body: JSON.stringify({ question: "Inspect what is on my screen right now and explain visible controls and errors.", brain: currentBrain })
         });
         const data = await res.json();
         showResponseCard(data);
-      } catch (e) {}
+        if (data.answer) {
+          if (currentBrain === 'gemini-live') {
+            updateLiveTranscriptBubble(`✦ Vision: ${data.answer}`);
+          }
+          await speakText(data.answer);
+        }
+      } catch (e) {
+        showResponseCard({ answer: "I was unable to analyze your screen at this time, sir." });
+      }
     }
   </script>
 </body>

@@ -87,6 +87,15 @@ def capture_screen(mode="fullscreen", region=None):
     - 'region': Captures specific [x, y, w, h] coordinates.
     """
     ts = int(time.time() * 1000)
+    
+    # Attach thread desktop to interactive input desktop on Windows
+    try:
+        h_desk = user32.OpenInputDesktop(0, False, 0x01FF)
+        if h_desk:
+            user32.SetThreadDesktop(h_desk)
+    except Exception:
+        pass
+
     hwnd, window_title, bbox = get_active_window_info()
     w = user32.GetSystemMetrics(0) or 1600
     h = user32.GetSystemMetrics(1) or 900

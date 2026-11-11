@@ -96,7 +96,18 @@ class AgentOrchestrator:
                 }
 
         # 2. Direct Screen Vision Intent
-        if any(kw in q_lower for kw in ["what's on my screen", "what is on my screen", "look at my screen", "read this error", "explain this error", "what does this button do"]):
+        screen_vision_triggers = [
+            "what's on my screen", "what is on my screen", "look at my screen", "look at the screen",
+            "see my screen", "see the screen", "can you see my screen", "can you see the screen",
+            "what do you see on my screen", "what do you see on screen", "inspect screen", "inspect my screen",
+            "inspect what is on my screen", "check my screen", "check screen", "analyze screen",
+            "read this error", "explain this error", "what does this button do", "view screen", "describe screen",
+            "can you see", "look screen"
+        ]
+        is_screen_query = any(kw in q_lower for kw in screen_vision_triggers) or bool(
+            re.search(r'\b(see|look\s+at|inspect|view|describe|check|analyze|what(?:\'s|\s+is)\s+on|can\s+you\s+see)\s+(?:what(?:\'s|\s+is)\s+on\s+)?(?:my\s+|the\s+)?screen\b', q_lower)
+        )
+        if is_screen_query:
             vis_res = dispatch_skill("vis_describe_screen", {"prompt": question})
             if vis_res.get("status") == "success":
                 ans = vis_res.get("analysis", "I have analyzed your screen, sir.")

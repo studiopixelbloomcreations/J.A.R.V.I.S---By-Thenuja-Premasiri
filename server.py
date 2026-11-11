@@ -8,6 +8,7 @@ import sys
 import os
 import json
 import socket
+import threading
 import urllib.parse
 import http.server
 import pathlib
@@ -239,20 +240,29 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
             print(f"  ⚠  {msg}")
 
 
+def run_http_server(port):
+    try:
+        with http.server.HTTPServer(("", port), JarvisHandler) as httpd:
+            httpd.serve_forever()
+    except Exception as e:
+        print(f"Port {port} server stopped: {e}")
+
+
 def main():
     cfg = load_config()
     print(f"\n=======================================================")
     print(f"✦ J.A.R.V.I.S. INTELLIGENCE SYSTEM — ONLINE")
-    print(f"  Model: {cfg.get('model')} | Port: {PORT}")
+    print(f"  Model: {cfg.get('model')} | Primary Port: {PORT}")
     print(f"  Skills: {len(registry.get_all())} registered")
-    print(f"  Localhost URL: http://localhost:{PORT}")
+    print(f"  Dual Localhost URLs: http://localhost:{PORT} and http://localhost:4719")
     print(f"=======================================================\n")
 
-    with http.server.HTTPServer(("", PORT), JarvisHandler) as httpd:
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nJ.A.R.V.I.S. shutdown complete.")
+    # Start mirror listener on 4719 so whichever port user has open in browser responds
+    if PORT != 4719:
+        t = threading.Thread(target=run_http_server, args=(4719,), daemon=True)
+        t.start()
+
+    run_http_server(PORT)
 
 
 if __name__ == "__main__":
