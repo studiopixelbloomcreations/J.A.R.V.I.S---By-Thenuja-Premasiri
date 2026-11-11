@@ -191,3 +191,116 @@ def organize_unassigned_notes():
 
     build.rebuild()
     return organized
+
+
+def handle_ambient_learn(raw_text):
+    """
+    Autonomous ambient background learner.
+    Analyzes spoken text from the continuous listener.
+    If personal knowledge or user preferences/projects are mentioned,
+    it automatically writes a note to notes/personal/ and updates the Knowledge Galaxy.
+    """
+    clean_text = raw_text.strip()
+    words = clean_text.split()
+    if len(words) < 4:
+        return {"learned": False, "reason": "Too short"}, 200
+
+    low = clean_text.lower()
+    if any(low.startswith(p) for p in ["jarvis", "switch to", "hey jarvis", "stop", "pause", "resume", "clear"]):
+        return {"learned": False, "reason": "Command or wake word, not ambient fact."}, 200
+
+    has_self_ref = any(w in low for w in [
+        "i ", "i'm", "i've", "my ", "mine", "we ", "our ", "prefer", "like", "love", "hate",
+        "working on", "building", "goal", "meeting", "doctor", "schedule", "routine", "usually",
+        "habit", "fitness", "workout", "bought", "moved", "wife", "husband", "son", "daughter",
+        "mother", "father", "friend", "client", "project", "budget", "car", "computer", "temperature"
+    ])
+    if not has_self_ref:
+        return {"learned": False, "reason": "No personal reference detected."}, 200
+
+    config = load_config()
+    api_key = config.get("api_key")
+
+    prompt = f"""You are the autonomous memory acquisition module of J.A.R.V.I.S.
+Analyze this statement spoken in the user's presence:
+"{clean_text}"
+
+Determine if this statement discloses a durable, factual detail about the user's personal life, habits, preferences, health, family, routines, projects, or goals.
+Output strict JSON:
+{{
+  "has_insight": true,
+  "title": "Concise Note Title (2-5 words, e.g. Morning Coffee Routine)",
+  "insight": "Crisp 1-2 sentence distillation of what was learned about the user.",
+  "category": "personal"
+}}
+If it does not contain durable personal facts, set "has_insight": false."""
+
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": 300}
+    }).encode("utf-8")
+
+    data = None
+    if api_key:
+        for m in ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash"]:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
+                req = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    resp_data = json.loads(resp.read().decode("utf-8"))
+                    txt = resp_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    txt_clean = re.sub(r'^```json\s*', '', txt, flags=re.I)
+                    txt_clean = re.sub(r'```$', '', txt_clean.strip())
+                    data = json.loads(txt_clean)
+                    break
+            except Exception:
+                continue
+
+    if not data or not data.get("has_insight"):
+        return {"learned": False, "reason": "No durable personal insight extracted."}, 200
+
+    title = data.get("title", "Personal Context Note")
+    insight = data.get("insight", clean_text)
+    clean_stem = re.sub(r'[^\w\s-]', '', title).strip().title()
+
+    dest_dir = NOTES_DIR / "personal"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_file = dest_dir / f"{clean_stem}.md"
+
+    if dest_file.exists():
+        existing_content = dest_file.read_text(encoding="utf-8", errors="replace")
+        new_content = f"{existing_content}\n\n- **Updated:** {insight}\n"
+        dest_file.write_text(new_content, encoding="utf-8")
+    else:
+        new_content = f"""# {title}
+
+- **Acquired:** Autonomous ambient voice learning
+- **Cluster:** Personal Context
+
+## Overview
+{insight}
+
+*Autonomously recorded and integrated into Personal Knowledge Graph by J.A.R.V.I.S.*
+"""
+        dest_file.write_text(new_content, encoding="utf-8")
+
+    fresh_graph = build.rebuild()
+    new_node = None
+    for n in fresh_graph.get("nodes", []):
+        if n["label"] == dest_file.stem and n["group"] == "personal":
+            new_node = n
+            break
+
+    return {
+        "learned": True,
+        "title": dest_file.stem,
+        "insight": insight,
+        "node": new_node,
+        "graph": fresh_graph,
+        "folder": "personal"
+    }, 200

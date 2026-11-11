@@ -684,6 +684,24 @@
       min-height: 22px;
     }
 
+    /* Ambient Auto-Learned Knowledge Notification Toast */
+    .learned-toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: rgba(8, 14, 28, 0.94);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-cyan);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.25);
+      border-radius: 12px;
+      padding: 12px 18px;
+      z-index: 999;
+      display: none;
+      max-width: 380px;
+      animation: fadeInCard 0.25s ease-out;
+      font-family: var(--font-sans);
+    }
+
     /* Pill Prompt Input Bar */
     .pill-input-bar {
       width: 100%;
@@ -1160,13 +1178,17 @@
     let isListening = false;
     let speechRec = null;
     let isRecStarted = false;
-    let shouldKeepListening = false;
+    let shouldKeepListening = true; // Continuous always-listening
+    let isAssistantActive = false; // Passive monitoring until wake word "JARVIS" is heard
+    let activeTimeout = null;
     let currentBrain = 'gemini-3.5'; // 'gemini-3.5' (Text mode) or 'gemini-live' (Voice streaming)
     let isFishAudioEnabled = true;
     let silenceTimer = null;
     let currentAudioElement = null;
     let allSkillsData = [];
-    let isOrbActive = true;
+    let isOrbActive = false; // Passive halo on start
+    let ambientBuffer = [];
+    let ambientLearnTimer = null;
 
     // ── Color Theme Mapping ──
     const GROUP_COLORS = {
@@ -1186,7 +1208,10 @@
     // ── 1. Initialize Holographic Standalone Vector Orb ──
     window.addEventListener('DOMContentLoaded', () => {
       orbInstance = new JarvisOrb('jarvis-orb-canvas', { width: 250, height: 250 });
-      orbInstance.setState('idle', 'STANDBY');
+      orbInstance.setState('idle', 'MONITORING');
+
+      const badge = document.getElementById('orb-online-indicator');
+      if (badge) badge.innerText = 'MONITORING';
 
       initThreeForceGraph();
       buildHubsList();
@@ -1195,6 +1220,9 @@
       initOrbDragging();
       loadSkillsCatalogue();
       loadSystemDiagnostics();
+
+      // Begin continuous always-listening
+      startSpeechListening();
     });
 
     // ── 2. Three.js ForceGraph3D Setup ──
@@ -1438,15 +1466,34 @@
       }
     }
 
+    function resetActiveTimer() {
+      clearTimeout(activeTimeout);
+      // Stays active for 16 seconds after speaking; then returns to passive monitoring
+      activeTimeout = setTimeout(() => {
+        isAssistantActive = false;
+        isOrbActive = false;
+        if (orbInstance) orbInstance.setState('idle', 'MONITORING');
+        const badge = document.getElementById('orb-online-indicator');
+        if (badge) badge.innerText = 'MONITORING';
+        updateLiveTranscriptBubble('Ambient monitoring active... Say "Jarvis" to command.');
+      }, 16000);
+    }
+
     function toggleOrbActiveState() {
       if (orbHasMoved) return; // Prevent toggle when ending drag
-      isOrbActive = !isOrbActive;
-      if (isOrbActive) {
-        orbInstance.setState('listening', currentBrain === 'gemini-live' ? 'LIVE' : 'LISTENING');
+      isAssistantActive = !isAssistantActive;
+      isOrbActive = isAssistantActive;
+      const badge = document.getElementById('orb-online-indicator');
+
+      if (isAssistantActive) {
+        resetActiveTimer();
+        orbInstance.setState('listening', currentBrain === 'gemini-live' ? 'GEMINI LIVE' : 'JARVIS ACTIVE');
+        if (badge) badge.innerText = 'ONLINE';
         startSpeechListening();
       } else {
-        orbInstance.setState('paused', 'PAUSED');
-        stopSpeechListening();
+        clearTimeout(activeTimeout);
+        orbInstance.setState('idle', 'MONITORING');
+        if (badge) badge.innerText = 'MONITORING';
       }
     }
 
@@ -1530,7 +1577,26 @@
       }
     }
 
-    // ── 8. Unified Speech Recognition & Real-Time Live Dictation ──
+    // ── 8. Unified Speech Recognition & Real-Time Natural Dictation ──
+    const CONTINUATION_WORDS = new Set([
+      'and', 'or', 'but', 'because', 'so', 'also', 'then', 'with', 'to', 'for', 'that', 'if', 'when',
+      'like', 'which', 'as', 'about', 'my', 'the', 'a', 'an', 'in', 'on', 'at', 'by', 'from', 'of',
+      'into', 'through', 'during', 'before', 'after', 'above', 'below', 'under', 'our', 'their', 'his', 'her'
+    ]);
+
+    function computeSilenceDelay(text) {
+      if (!text) return 2200;
+      const words = text.trim().toLowerCase().split(/\s+/);
+      if (words.length === 0) return 2200;
+      const lastWord = words[words.length - 1].replace(/[^\w]/g, '');
+      if (CONTINUATION_WORDS.has(lastWord)) {
+        // Paused mid-sentence on a connector: allow 3.2 seconds breathing time
+        return 3200;
+      }
+      // Natural human sentence completion threshold (2.2 seconds)
+      return 2200;
+    }
+
     function initUnifiedSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) return;
@@ -1544,8 +1610,12 @@
         isRecStarted = true;
         isListening = true;
         updateMicButtonState(true);
-        if (orbInstance && isOrbActive) {
-          orbInstance.setState('listening', currentBrain === 'gemini-live' ? 'LIVE STREAM' : 'LISTENING');
+        if (orbInstance) {
+          if (isAssistantActive) {
+            orbInstance.setState('listening', currentBrain === 'gemini-live' ? 'GEMINI LIVE' : 'JARVIS ACTIVE');
+          } else {
+            orbInstance.setState('idle', 'MONITORING');
+          }
         }
       };
 
@@ -1563,44 +1633,101 @@
         }
 
         const liveText = (finalText || interimText).trim();
+        if (!liveText) return;
+        const lower = liveText.toLowerCase();
+
+        // Check for wake word "Jarvis"
+        const wakeWordMatch = lower.match(/\b(hey\s+)?jarvis\b/i);
+
+        // ══════════════════════════════════════════════════════════════════
+        // CASE A: PASSIVE MONITORING (Waiting for "JARVIS")
+        // ══════════════════════════════════════════════════════════════════
+        if (!isAssistantActive) {
+          if (wakeWordMatch) {
+            // Wake Word Triggered!
+            isAssistantActive = true;
+            isOrbActive = true;
+            resetActiveTimer();
+            if (orbInstance) orbInstance.setState('listening', currentBrain === 'gemini-live' ? 'GEMINI LIVE' : 'JARVIS ACTIVE');
+            const badge = document.getElementById('orb-online-indicator');
+            if (badge) badge.innerText = 'ONLINE';
+
+            const command = liveText.slice(wakeWordMatch.index + wakeWordMatch[0].length).replace(/^[,:\s]+/, '').trim();
+            if (command.length > 0) {
+              if (currentBrain === 'gemini-3.5') {
+                const input = document.getElementById('user-prompt-input');
+                if (input) input.value = command;
+              } else {
+                updateLiveTranscriptBubble(`✦ [Active] ${command}`);
+              }
+
+              clearTimeout(silenceTimer);
+              const delay = computeSilenceDelay(command);
+              silenceTimer = setTimeout(() => {
+                handleSpokenInput(command);
+              }, delay);
+            } else {
+              updateLiveTranscriptBubble('✦ JARVIS: At your service, sir. How may I assist?');
+              speakText("At your service, sir. How may I assist you?");
+            }
+            return;
+          }
+
+          // Ambient autonomous background learning in passive mode
+          if (finalText.trim().length > 12) {
+            scheduleAmbientLearning(finalText.trim());
+          }
+          return;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // CASE B: ACTIVE CONVERSATION (Engaged with user)
+        // ══════════════════════════════════════════════════════════════════
+        resetActiveTimer();
+
+        // Strip leading wake word if spoken repeatedly
+        let activeQuery = liveText;
+        if (wakeWordMatch && wakeWordMatch.index < 10) {
+          activeQuery = liveText.slice(wakeWordMatch.index + wakeWordMatch[0].length).replace(/^[,:\s]+/, '').trim() || liveText;
+        }
 
         // Real-time live dictation output:
         if (currentBrain === 'gemini-3.5') {
-          // Text mode: display transcript directly in textbox in real time
           const input = document.getElementById('user-prompt-input');
-          if (input && liveText) {
-            input.value = liveText;
-          }
+          if (input && activeQuery) input.value = activeQuery;
         } else {
-          // Gemini Live mode: display transcript in floating bubble in real time
-          updateLiveTranscriptBubble(liveText || 'Listening... Speak naturally, sir.');
+          updateLiveTranscriptBubble(activeQuery || 'Listening... Speak naturally, sir.');
         }
 
-        // Fast voice model switching
-        const lower = liveText.toLowerCase();
-        if (lower.includes('switch to gemini live') || lower.includes('switch brain to gemini live') || lower.includes('activate gemini live') || lower.includes('switch to live')) {
+        // Verbal Brain Switching
+        const lowerQuery = activeQuery.toLowerCase();
+        if (lowerQuery.includes('switch to gemini live') || lowerQuery.includes('switch brain to gemini live') || lowerQuery.includes('activate gemini live') || lowerQuery.includes('switch to live')) {
           if (currentBrain !== 'gemini-live') {
             setBrainMode('gemini-live');
-            speakText("Switching brain to Gemini Live, sir. Voice channel open.");
+            speakText("Switching brain to Gemini Live, sir. Voice streaming active.");
             return;
           }
-        } else if (lower.includes('switch to gemini 3.5') || lower.includes('switch brain to gemini 3.5') || lower.includes('switch to text') || lower.includes('switch back')) {
+        } else if (lowerQuery.includes('switch to gemini 3.5') || lowerQuery.includes('switch brain to gemini 3.5') || lowerQuery.includes('switch to text') || lowerQuery.includes('switch back')) {
           if (currentBrain !== 'gemini-3.5') {
             setBrainMode('gemini-3.5');
-            speakText("Returning to Gemini 3.5 text model, sir. Console and neural voice restored.");
+            speakText("Returning to Gemini 3.5 text model, sir.");
             return;
           }
         }
 
+        // Natural Human Cadence Silence Detection (No cutting off mid-sentence)
         clearTimeout(silenceTimer);
-        if (finalText.trim()) {
+        const queryToSubmit = (finalText || interimText).trim();
+        if (queryToSubmit.length > 2) {
+          const delay = computeSilenceDelay(queryToSubmit);
           silenceTimer = setTimeout(() => {
-            handleSpokenInput(finalText.trim());
-          }, 800);
-        } else if (currentBrain === 'gemini-live' && interimText.trim().length > 3) {
-          silenceTimer = setTimeout(() => {
-            handleSpokenInput(interimText.trim());
-          }, 1500);
+            let finalClean = queryToSubmit;
+            const m = queryToSubmit.toLowerCase().match(/\b(hey\s+)?jarvis\b/i);
+            if (m && m.index < 10) {
+              finalClean = queryToSubmit.slice(m.index + m[0].length).replace(/^[,:\s]+/, '').trim() || queryToSubmit;
+            }
+            handleSpokenInput(finalClean);
+          }, delay);
         }
       };
 
@@ -1614,14 +1741,69 @@
         isRecStarted = false;
         isListening = false;
         updateMicButtonState(false);
-        if (shouldKeepListening || currentBrain === 'gemini-live') {
+        // Continuously keep always-listening active
+        if (shouldKeepListening) {
           setTimeout(() => {
             if (!isRecStarted) startSpeechListening();
-          }, 350);
-        } else {
-          if (orbInstance && isOrbActive) orbInstance.setState('idle', 'ONLINE');
+          }, 300);
         }
       };
+    }
+
+    // ── Continuous Ambient Learning Pipeline ──
+    function scheduleAmbientLearning(phrase) {
+      ambientBuffer.push(phrase);
+      clearTimeout(ambientLearnTimer);
+      ambientLearnTimer = setTimeout(async () => {
+        const combined = ambientBuffer.join(' ').trim();
+        ambientBuffer = [];
+        if (!combined || combined.length < 15) return;
+
+        try {
+          const res = await fetch('/ambient_learn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: combined })
+          });
+          const data = await res.json();
+          if (data.learned && data.node) {
+            // Live update 3D Knowledge Galaxy with new personal note node!
+            if (typeof GRAPH !== 'undefined' && GRAPH.nodes && Graph) {
+              const exists = GRAPH.nodes.some(n => n.id === data.node.id || n.label === data.node.label);
+              if (!exists) {
+                GRAPH.nodes.push(data.node);
+                if (data.graph && data.graph.links) {
+                  GRAPH.links = data.graph.links;
+                }
+                Graph.graphData(GRAPH);
+                focusOnNode(data.node);
+              }
+            }
+            showAutoLearnedToast(data.title, data.insight);
+          }
+        } catch (e) {}
+      }, 1400);
+    }
+
+    function showAutoLearnedToast(title, insight) {
+      let toast = document.getElementById('auto-learned-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'auto-learned-toast';
+        toast.className = 'learned-toast';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = `
+        <div style="font-weight:700; color:var(--cyan); display:flex; align-items:center; gap:6px;">
+          <span>🧠</span> AUTO-LEARNED & INDEXED TO PERSONAL GRAPH
+        </div>
+        <div style="font-size:12px; color:#fff; font-weight:600; margin-top:3px;">${title}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px; line-height:1.4;">${insight}</div>
+      `;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 6000);
     }
 
     function updateLiveTranscriptBubble(text) {
@@ -1650,9 +1832,7 @@
       if (!speechRec || isRecStarted) return;
       try {
         speechRec.start();
-      } catch (err) {
-        // Guarded against InvalidStateError
-      }
+      } catch (err) {}
     }
 
     function stopSpeechListening() {
@@ -1707,10 +1887,10 @@
           updateLiveTranscriptBubble(`✦ JARVIS: ${data.answer}`);
         }
 
-        // Speak aloud using Fish Audio neural TTS or browser synthesis
+        // Speak aloud using Fish Audio neural British butler voice
         await speakText(data.answer);
 
-        // If nodes cited, focus camera
+        // Focus camera on primary source node if cited
         if (data.nodes && data.nodes.length > 0 && Graph && currentBrain === 'gemini-3.5') {
           const targetNode = GRAPH.nodes.find(n => n.id === data.nodes[0]);
           if (targetNode) focusOnNode(targetNode);
@@ -1746,7 +1926,7 @@
 
     function hideResponseCard() {
       document.getElementById('assistant-response-card').style.display = 'none';
-      if (orbInstance) orbInstance.setState('idle', 'ONLINE');
+      if (orbInstance) orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? 'ACTIVE' : 'MONITORING');
     }
 
     async function speakText(text) {
@@ -1763,13 +1943,7 @@
         window.speechSynthesis.cancel();
       }
 
-      // If in Gemini Live mode or Fish Audio is disabled: use browser speech synthesis
-      if (currentBrain === 'gemini-live' || !isFishAudioEnabled) {
-        speakWithBrowserSynthesis(text);
-        return;
-      }
-
-      // Try Fish Audio neural TTS via /tts endpoint
+      // Always use Fish Audio neural British butler voice (no robotic voice!)
       try {
         orbInstance.setState('speaking', 'SYNTHESIZING');
         const res = await fetch('/tts', {
@@ -1790,8 +1964,8 @@
 
           currentAudioElement.onended = () => {
             currentAudioElement = null;
-            if (orbInstance && isOrbActive) {
-              orbInstance.setState(currentBrain === 'gemini-live' ? 'listening' : 'idle', currentBrain === 'gemini-live' ? 'LIVE' : 'ONLINE');
+            if (orbInstance) {
+              orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? (currentBrain === 'gemini-live' ? 'GEMINI LIVE' : 'JARVIS ACTIVE') : 'MONITORING');
             }
           };
 

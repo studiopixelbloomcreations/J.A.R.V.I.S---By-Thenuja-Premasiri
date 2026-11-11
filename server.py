@@ -98,6 +98,8 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_tts()
         elif path == "/remember":
             self._handle_remember()
+        elif path == "/ambient_learn":
+            self._handle_ambient_learn()
         elif path == "/organize":
             self._handle_organize()
         elif path == "/stop":
@@ -174,6 +176,17 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
 
         from server_legacy_remember import handle_remember_synthesis
         res, status = handle_remember_synthesis(raw_text)
+        self._send_json(res, status)
+
+    def _handle_ambient_learn(self):
+        body = self._read_json()
+        raw_text = body.get("text", "").strip()
+        if not raw_text or len(raw_text.split()) < 3:
+            self._send_json({"learned": False, "reason": "Insufficient speech."}, 200)
+            return
+
+        from server_legacy_remember import handle_ambient_learn
+        res, status = handle_ambient_learn(raw_text)
         self._send_json(res, status)
 
     def _handle_organize(self):

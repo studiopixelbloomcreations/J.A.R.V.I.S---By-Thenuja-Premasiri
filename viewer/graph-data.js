@@ -198,62 +198,69 @@ const GRAPH = {
     },
     {
       "id": 28,
+      "label": "Early Coding Routine",
+      "group": "personal",
+      "is_hub": false,
+      "excerpt": "# Early Coding Routine\n\n- **Acquired:** Autonomous ambient voice learning\n- **Cluster:** Personal Context\n\n## Overview\nThe user prefers working on deep architecture coding before 8 AM, fueled by black espresso.\n\n*Autonomously recorded and integrated into Personal Knowledge Graph by J.A.R.V.I.S.*\n"
+    },
+    {
+      "id": 29,
       "label": "My Personal Fitness Morning",
       "group": "personal",
       "is_hub": false,
       "excerpt": "# My Personal Fitness\nMorning deadlifts, 3000 calories, and recovery runs."
     },
     {
-      "id": 29,
+      "id": 30,
       "label": "User Context Profile For",
       "group": "personal",
       "is_hub": false,
       "excerpt": "# User Context Profile for J.A.R.V.I.S.\n## A curated, editable context file \u2014 not a secret store\n\n**Version:** 1.0  \n**Prepared:** 11 November 2026\n\n> This file summarizes useful context the user has shared in ChatGPT conversations. It is not guaranteed to contain every detail, and it may become outdated. Treat it as user-editable reference data, not as verified identity information. Do not infer missing facts. Ask before relying on details that may have changed.\n\n---\n\n# 1. How J.A.R.V.I.S. Should Use This File\n\n- Use this context to reduce repetitive questions and tailor explanations.\n- Prefer current user instructions over anything in this file.\n- If two details conflict, ask which is current.\n- Do not expose this file to websites, other users, or external services.\n- Do not treat a fact in this file as permission to access a folder, account, camera, microphone, or connected service.\n- Do not store passwords, API keys, authentication codes, payment information, private tokens, or other secrets here.\n- Keep a visible way for the user to review, edit, export, and delete this context.\n- Before sending any of this context to a cloud model, show the user what categories will be shared and obtain the required permission.\n- Do not infer sensitive personal traits from interests, projects, language, or location references.\n\n---\n\n# 2. General Preferences and Working Style\n\n- The user likes ambitious, detailed, practical solutions and often asks for a complete implementation plan rather than a high-level overview.\n- The user enjoys a cinematic J.A.R.V.I.S.-inspired assistant experience, including a futuristic HUD/orb and voice interaction.\n- The user prefers polished, professional-looking design. They dislike visuals that look cheap, generic, or obviously AI-generated.\n- The user often wants step-by-step guidance that can be followed on a real Windows PC.\n- The user appreciates direct explanations, concrete commands, troubleshooting steps, and clear warnings about risk.\n- The user frequently uses informal, energetic language. J.A.R.V.I.S. can be friendly and lightly witty, but should remain respectful and clear.\n- The user likes having reusable prompts and structured project documents.\n- Do not assume that the user wants paid services. Ask before choosing a paid API, subscription, or tool.\n- When there is a free/local option and a paid/cloud option, explain the trade-offs.\n- Avoid making a task sound complete until it has actually been tested.\n\n---\n\n# 3. Education and Learning Context\n\n- The user has discussed being a Grade 10 student in November 2026.\n- A prior school context mentioned St. Anne\u2019s College, Kurunegala.\n- The user has participated in or helped organize an English debating circle, including recruitment and debate activities.\n- The user has asked for school science revision notes aligned closely with the official textbook and organized by lesson.\n- The user sometimes needs help catching up on lessons and prefers concise, well-structured study material.\n- For school tasks, explain concepts clearly and support learning; do not fabricate textbook content or claim alignment with a source that has not been checked.\n- The user has requested Sinhala and Tamil translations, transliterations, and vocabulary explanations.\n\n---\n\n# 4. Creative Goals and Interests\n\n- The user has described a goal of becoming an AI VFX artist and short-film creator.\n- Interests include video editing, graphic design, photography, videography, animation, visual effects, branding, music-related creative work, and web design.\n- The user has worked on animation and short-film concepts and cares about consistent characters, scene continuity, polished 3D visual style, and detailed prompts.\n- The user has used or discussed tools such as Canva, CapCut, Audacity/Muse Hub, and DaVinci Resolve.\n- The user has explored AI image/video generation workflows and prompt writing.\n- Creative recommendations should account for the user's actual hardware limits and avoid assuming a high-end GPU.\n\n---\n\n# 5. Business and Brand Projects\n\n## 5.1 Pixel Bloom Studios\n\n- The user has discussed and developed Pixel Bloom Studios as an online creative business.\n- Services discussed include video editing, graphic design, videography, photography, branding, social media graphics, photo editing, music-related creative work, T-shirt design, and web design.\n- The user has discussed separating photography and videography into distinct departments while keeping them under the main brand.\n- The main brand direction is colorful and creative but still professional; the user does not want the identity to become excessively floral.\n- A tagline discussed: \u201cBuilt by Pixels, Grown with Vision\u201d.\n- The user has discussed social media presence, logo launch posts, business outreach, directories, and customer acquisition.\n- The user has described the online business as officially registered in a prior conversation. Confirm current status before using this as a current fact.\n- The user has discussed a longer-term goal of having a physical studio and an experience/training environment.\n\n## 5.2 Other creative/business ideas\n\n- Botani Code and Synth Bloom were discussed as possible merchandise or brand concepts.\n- The user has discussed photography outreach and offering photography services for events.\n- The user has explored website builders and a compact three-page website structure.\n\n---\n\n# 6. Major Personal Technology Project: J.A.R.V.I.S.\n\n- The user is building a personal AI assistant project called J.A.R.V.I.S.\n- The desired experience is a capable desktop assistant, not merely a chatbot or a knowledge-graph demo.\n- Desired capabilities include screen understanding, screenshot capture, screen annotation, opening apps, interacting with windows, clicking and typing with permission, PC control, voice interaction, and a persistent movable overlay.\n- The user wants a futuristic orb matching the supplied reference: dark background, cyan/teal concentric rings, fine technical tick marks, a central J.A.R.V.I.S. label, and status indicators.\n- The orb should remain on the desktop, be draggable, and react differently while idle, listening, thinking, speaking, executing, paused, or awaiting approval.\n- The user wants the outer ring to rotate and the orb to react to speech and microphone activity.\n- The user supplied a six-prompt \u201cBuild Your Own JARVIS\u201d PDF. Its foundation includes a markdown knowledge galaxy, note-grounded Q&A, browser voice, fly-to-source behavior, personality, and voice-based note capture.\n- The user wants to expand that foundation into a full desktop-agent system with a large modular skill catalogue.\n- J.A.R.V.I.S. should be transparent and permissioned: visible screen/microphone indicators, a global stop button, confirmations for consequential actions, and no secret monitoring.\n- A separate project PRD should remain the implementation source of truth. This profile is context, not a technical specification.\n\n---\n\n# 7. Aevra and Other AI Projects\n\n- The user has discussed building a personal AI system named Aevra, with a chat interface and tool/retrieval-oriented UI.\n- The user has worked with or compared coding assistants and development tools including Windsurf, Cline, and Claude Code.\n- The user has discussed a large software repository named STEM-Mind-AI.\n- The user values an original product identity and does not want a simple copy of another assistant's branding.\n- The user is interested in agentic systems that can investigate problems and carry out multi-step computer work, but J.A.R.V.I.S. must keep safe approval boundaries.\n\n---\n\n# 8. Computer and Device Context\n\nThe following are device details the user previously supplied. They may have changed; confirm before recommending hardware-specific actions.\n\n## 8.1 Main desktop \u2014 previously called ThenujaPC / Thenuja-PC\n\n- Intel Core i3-3240, 3.40 GHz.\n- 6 GB DDR3 RAM (about 5.90 GB usable was previously reported).\n- Samsung H61S1 / H61SI H61 motherboard context.\n- Integrated Intel graphics; no dedicated modern GPU was reported for this machine.\n- The user has used Windows 11, including modified installation paths for unsupported hardware.\n- The motherboard does not natively boot NVMe in the user's reported setup; Clover was explored as a boot workaround.\n- Storage history included a 256 GB NVMe SSD and two 500 GB hard drives in a later working setup.\n- The user has experimented with different NVMe drives/adapters and boot configurations.\n- The user has encountered graphics/OpenGL limitations with Blender and considered DaVinci Resolve.\n- Keep recommendations lightweight. Avoid assuming modern GPU acceleration, large RAM capacity, or native NVMe boot support.\n\n## 8.2 Other devices previously discussed\n\n- Dell Inspiron 15 3000: Pentium 5405U, 4 GB RAM, Intel UHD 610, 256 GB NVMe plus a 500 GB hard drive.\n- HP EliteBook x360 1030 G2: Intel Core i7-7600U, 8 GB RAM, Intel 5450S 256 GB storage; a prior touch/biometric-related issue was resolved after a BIOS reset.\n\nDo not assume these devices are still owned, available, or configured the same way.\n\n## 8.3 PC maintenance preferences\n\n- The user has asked for post-install driver setup and software inventory workflows.\n- The user has explored PowerShell scripts and Windows troubleshooting.\n- The user has asked about preserving browser state and files across Windows reinstallations.\n- The user has experienced a serious accidental disk-clean operation and attempted partition recovery. This is a strong reason for J.A.R.V.I.S. to use dry runs, exact disk identification, backups, and explicit confirmation before storage operations.\n- Never run DiskPart clean, format, partition deletion, boot repair, firmware flashing, or similar high-impact actions automatically.\n\n---\n\n# 9. Robotics and Engineering\n\n- The user has discussed a five-member school robotics team called Byte Raiders for a CY-BOTS Kick League event at NIBM Kandy.\n- The robot project involved a small soccer robot and a limited-voltage competition environment.\n- Components discussed included ESP32 DevKit V1, a LiPo battery, IBT-2/BTS7960 motor drivers, a buck converter, and geared DC motors.\n- The user discussed Bluetooth/Wi-Fi/Blynk control and motor-driver pin assignments.\n- The user is interested in hands-on electronics, robotics, troubleshooting, and system building.\n- Treat wiring, batteries, motors, and power systems carefully. Give age-appropriate safety guidance and recommend adult supervision for hazardous electrical or mechanical work.\n\n---\n\n# 10. Projects and Topics Previously Discussed\n\nThis section is an index of recurring topics, not a claim that every project is currently active.\n\n- J.A.R.V.I.S. desktop assistant.\n- Aevra personal AI system.\n- STEM-Mind-AI software project.\n- Pixel Bloom Studios branding and customer outreach.\n- Photography and videography department branding.\n- Short-film and animation production.\n- Sinhala-language animation competition concept \u201c\u0d85\u0d9a\u0dd4\u0dbb\u0dd4 \u0d85\u0dad\u0dbb\u0dd2\u0db1\u0dca\u201d.\n- School science revision notes and exam preparation.\n- English debating activities.\n- Byte Raiders / CY-BOTS robotics project.\n- Windows installation, drivers, bootloaders, NVMe, and storage troubleshooting.\n- PC performance and software compatibility.\n- Honda N-Wagon 2017 vehicle advertisement design and copywriting.\n- Graphic design and image editing workflows.\n- Website building and online business presence.\n\nAsk the user which projects are active before making them part of a current dashboard or daily briefing.\n\n---\n\n# 11. Software and Platforms Mentioned\n\nTools and platforms previously discussed include:\n\n- Windows 11 and PowerShell.\n- Google Chrome.\n- Canva.\n- CapCut.\n- Audacity / Muse Hub.\n- DaVinci Resolve.\n- Blender.\n- Adobe applications (used less frequently, according to prior discussion).\n- Claude Code.\n- Windsurf.\n- Cline.\n- ClickUp Brain.\n- Higgsfield and AI image/video generation tools.\n- Facebook and Instagram for business presence.\n- WhatsApp Web for communication.\n- GitHub for software projects.\n\nThis is a historical list, not a verified inventory of currently installed software.\n\n---\n\n# 12. Location and Regional Context\n\n- The user has often asked questions in a Sri Lankan context, including local education, business, technology, currency, and services.\n- Sri Lankan rupees (LKR) and local availability/pricing are often relevant.\n- The user has referenced Kurunegala and Kandy in school and project contexts.\n- Ask for the relevant city/area when a local recommendation depends on it. Do not assume an exact current location.\n\n---\n\n# 13. How J.A.R.V.I.S. Should Personalize Assistance\n\n## For technical help\n\n- Ask which PC/device is being used if the answer depends on hardware.\n- Prefer clear, numbered steps and commands that match Windows PowerShell or Command Prompt as appropriate.\n- Explain what a command does before potentially destructive operations.\n- Provide a rollback or backup plan for changes.\n- Do not assume the user has administrator access, a credit card, paid API credits, a dedicated GPU, or high-end hardware.\n\n## For creative work\n\n- Aim for polished, professional, distinctive results.\n- Avoid generic AI-looking visual language.\n- Keep branding consistent across related departments and projects.\n- When writing image/video prompts, specify composition, visual style, continuity, lighting, camera, and constraints where relevant.\n\n## For schoolwork\n\n- Keep notes organized and easy to revise.\n- Follow supplied textbooks or teacher materials when provided.\n- Clearly distinguish textbook-supported facts from extra explanation.\n- Help the user understand rather than only supplying unexplained answers.\n\n## For business work\n\n- Consider Sri Lankan context, LKR pricing, local platforms, and practical low-cost marketing.\n- Keep public-facing copy professional and brand-consistent.\n- Do not publish, message customers, or spend money without approval.\n\n## For J.A.R.V.I.S. itself\n\n- Be concise during voice interactions.\n- Use richer detail in documents and implementation plans.\n- Show the plan before complex multi-step tasks.\n- Display tool activity and permission status.\n- Confirm consequential actions.\n- Always provide a reliable stop mechanism.\n\n---\n\n# 14. Explicitly Excluded from This Profile\n\nFor privacy and safety, this profile intentionally excludes:\n\n- Phone numbers, email addresses, account identifiers, passwords, API keys, and authentication information.\n- Exact home address or precise live location.\n- Private health or medical information, including reports that may have been shared about another person.\n- Private information about family members, classmates, customers, or other third parties.\n- Any inferred sensitive personal attributes.\n\nIf the user wants additional non-sensitive context included, ask them to review and explicitly approve the proposed addition.\n\n---\n\n# 15. User-Editable Updates\n\nUse this section to record confirmed changes over time.\n\n| Date | Field | Confirmed update |\n|---|---|---|\n| YYYY-MM-DD | Example: Main PC | Replace old hardware details with current verified specifications |\n| YYYY-MM-DD | Example: Active project | Confirm whether a project is active, paused, or completed |\n\n**Rule:** Do not automatically overwrite a conflicting profile detail. Ask the user to confirm the update first.\n"
     },
     {
-      "id": 30,
+      "id": 31,
       "label": "Product Catalog",
       "group": "products",
       "is_hub": false,
       "excerpt": "# Product Catalog\n\nBloom & Brew's product catalog spans both our coffee and floral lines. This is the master reference for everything we offer.\n\n## \u2615 Coffee Menu\n\n### Hot Drinks\n| Item | Small | Medium | Large |\n|------|-------|--------|-------|\n| House Drip | $3.00 | $3.50 | $4.00 |\n| Americano | $3.75 | $4.25 | $4.75 |\n| Latte | $4.75 | $5.25 | $5.75 |\n| Cappuccino | $4.75 | $5.25 | \u2014 |\n| Mocha | $5.50 | $6.00 | $6.50 |\n| Bloom Latte (lavender + honey) | $6.00 | $6.50 | $7.00 |\n| Seasonal Special | varies | varies | varies |\n\n### Cold Drinks\n| Item | Price |\n|------|-------|\n| Cold Brew | $4.50 / $5.00 |\n| Iced Latte | $5.25 / $5.75 |\n| Bloom Iced Tea | $4.00 / $4.50 |\n\n### Retail Coffee\n- Single-origin bags (12oz): $16.00\n- Bloom & Brew House Blend (12oz): $14.00\n- Coffee subscription: $25/bi-weekly (see [[Revenue Streams]])\n\n## \ud83c\udf38 Floral Products\n\n### Arrangements\n| Style | Price Range | Best For |\n|-------|-----------|----------|\n| Petite Posy | $35-45 | Everyday, desk |\n| Garden Gathering | $55-75 | Gift, dinner party |\n| Statement Piece | $95-150 | Events, grand gesture |\n| Luxe Collection | $150-250+ | Weddings, corporate |\n\n### Subscriptions\n- Weekly bouquet: $45/week (see [[Revenue Streams]])\n- Bi-weekly bouquet: $40/delivery\n- Monthly arrangement: $55/delivery\n\n### Workshops\n- Basic Arrangement: $65/person\n- Seasonal Special: $85/person\n- Private Group (6-12): $95/person\n- Corporate Team Building: custom quote (see [[Partnership Opportunities]])\n\n## \ud83d\udecd Retail\n\n- Branded mugs and tumblers: $18-28\n- Bloom & Brew tote bags: $15\n- Dried flower bundles: $22-35\n- Gift cards: $25, $50, $100\n\n## Seasonal Additions\n\nEach season brings limited-time offerings coordinated with [[Seasonal Campaigns]]. See [[Pricing Strategy]] for margin targets on all items. Photography for all products follows [[Brand Guidelines]].\n\n## Bestsellers\n\n1. Bloom Latte (our signature!)\n2. Garden Gathering arrangement\n3. Weekly floral subscription\n4. House Blend coffee bag\n5. Basic Arrangement workshop\n\n## Equipment\n\nFor [[Facilities Maintenance]] reference:\n- La Marzocca Linea Mini (2 group)\n- Mazzer Mini grinder (x2)\n- Curtis batch brewer\n- Walk-in floral cooler (5x8 ft)\n"
     },
     {
-      "id": 31,
+      "id": 32,
       "label": "Tech Stack and Tools",
       "group": "products",
       "is_hub": false,
       "excerpt": "# Tech Stack and Tools\n\nThis document catalogs all the technology tools Bloom & Brew uses to run the business. We keep it simple and affordable.\n\n## Current Stack\n\n### Point of Sale\n- **Square POS** \u2014 Processes all transactions, tracks basic sales data\n- Integrated with our [[Loyalty Program]] tracking\n- Monthly cost: $0 (free tier + per-transaction fees)\n\n### Communication\n- **Slack** (free tier) \u2014 Team chat, organized by channels (#coffee, #floral, #general, #scheduling)\n- **Google Workspace** \u2014 Email (bloomandbrew.com), Drive for document storage, Sheets for tracking\n- Used for [[Daily Standup Process]] notes and [[Shift Scheduling]] sheet\n\n### Marketing\n- **Mailchimp** (free tier) \u2014 [[Email Marketing]] platform\n- **Canva** (pro, 1 seat) \u2014 Design tool for [[Social Media Strategy]] and [[Brand Guidelines]] assets\n- **Later** (free tier) \u2014 Social media scheduling\n- **Google Business Profile** \u2014 Reviews, local SEO, maps\n\n### Finance\n- **Wave Accounting** (free) \u2014 Bookkeeping, invoicing, [[Budget Planning]] tracking\n- **Square Dashboard** \u2014 [[Revenue Streams]] daily sales tracking\n- **Google Sheets** \u2014 Custom financial models, [[Pricing Strategy]] calculators\n\n### Operations\n- **Google Sheets** \u2014 [[Inventory Management]] tracking, [[Shift Scheduling]]\n- **Google Forms** \u2014 [[Customer Feedback Program]] surveys, workshop sign-ups\n- **Trello** (free) \u2014 Project management for [[Seasonal Campaigns]] and [[Growth Roadmap]] initiatives\n\n### Knowledge Management\n- **Google Drive** \u2014 All documents, [[Training and Onboarding]] materials, [[Quarterly Business Review]] archives\n- **Notion** (free) \u2014 SOPs, recipes, arrangement guides ([[Product Catalog]] details)\n\n## Planned Upgrades\n\n| Tool | Purpose | Monthly Cost | Priority |\n|------|---------|-------------|----------|\n| 7shifts | [[Shift Scheduling]] | $35 | High |\n| Mailchimp Essentials | [[Email Marketing]] upgrade | $20 | Medium |\n| Lightspeed POS | Better [[Inventory Management]] integration | $89 | Low (Phase 2) |\n| Dedicated loyalty app | [[Loyalty Program]] upgrade | $50 | Medium |\n\n## Security & Access\n\n- All accounts use strong passwords + 2FA where available\n- Maya and Jordan have admin access to all systems\n- [[Team Roster]] leads have manager-level access to their relevant tools\n- Shared account credentials stored in a password manager (Bitwarden, free)\n\n## Budget\n\nTotal current tech spend: ~$35/month. Planned upgrades budgeted in [[Budget Planning]] and phased per [[Growth Roadmap]] timeline.\n\n## Training\n\nNew hires are trained on all relevant tools during [[Training and Onboarding]] Week 1. Tool-specific quick reference guides are pinned in the relevant Slack channels.\n"
     },
     {
-      "id": 32,
+      "id": 33,
       "label": "Customer Feedback Program",
       "group": "team",
       "is_hub": false,
       "excerpt": "# Customer Feedback Program\n\nListening to our customers is how Bloom & Brew stays relevant and continues to improve. Our feedback program captures voice-of-customer data across multiple touchpoints.\n\n## Feedback Channels\n\n### In-Store\n- Comment cards at the register (refreshed weekly)\n- QR code on receipts linking to a short survey\n- Direct conversation \u2014 our [[Team Roster]] is trained to ask \"How was everything?\"\n\n### Digital\n- Google Reviews (currently 4.7 stars, 380+ reviews)\n- Yelp (4.5 stars, 210+ reviews)\n- Instagram DMs and comments\n- [[Email Marketing]] reply-based feedback\n\n### Structured\n- Post-workshop survey (sent within 24 hours)\n- [[Loyalty Program]] member quarterly survey\n- Net Promoter Score survey (sent quarterly to full [[Email Marketing]] list)\n\n## Metrics We Track\n\n| Metric | Current | Target |\n|--------|---------|--------|\n| Google rating | 4.7 | 4.8 |\n| NPS | 67 | 70+ |\n| Workshop satisfaction | 4.8/5 | 4.8/5 |\n| Response rate | 22% | 30% |\n\n## Feedback Loop\n\n1. All feedback is logged in our tracking spreadsheet (see [[Tech Stack and Tools]])\n2. Urgent issues (rating \u2264 2) are addressed within 24 hours by Jordan\n3. Weekly feedback summary discussed at [[Daily Standup Process]] on Mondays\n4. Monthly trends compiled for [[Quarterly Business Review]]\n5. Product and service changes driven by feedback are noted in [[Product Catalog]]\n\n## Recent Actions from Feedback\n\n- Added oat milk as default alt-milk option (top request)\n- Extended Saturday hours to 9 PM (requested by workshop attendees)\n- Created a \"quiet corner\" seating area (customers wanted a calm space)\n- Introduced smaller arrangement sizes at lower price points (see [[Pricing Strategy]])\n\n## Review Response Strategy\n\nAll Google and Yelp reviews get a response within 48 hours. Positive reviews get a genuine thank you. Negative reviews get a professional response and an offline follow-up. Our [[Social Media Strategy]] and [[Brand Guidelines]] govern the tone of all public responses.\n"
     },
     {
-      "id": 33,
+      "id": 34,
       "label": "Employee Wellness Program",
       "group": "team",
       "is_hub": false,
       "excerpt": "# Employee Wellness Program\n\nAt Bloom & Brew, we believe that happy, healthy team members create the best experiences for our customers. Our wellness program is modest but meaningful.\n\n## Core Benefits\n\n- **Health Stipend:** $100/month health and wellness stipend (gym, therapy, etc.)\n- **Free Drinks:** Unlimited coffee and tea during shifts\n- **Staff Discount:** 50% off all products (see [[Pricing Strategy]])\n- **Flexible Scheduling:** We accommodate school schedules, second jobs, and life events through [[Shift Scheduling]]\n- **Mental Health Days:** 3 additional days per year, no questions asked\n\n## PTO Policy\n\n- Full-time: 10 days PTO + 3 mental health days + holidays\n- Part-time: 5 days PTO + 2 mental health days + holidays\n- PTO requests go through [[Shift Scheduling]] process\n- Blackout dates around major [[Seasonal Campaigns]] (Valentine's Day, Mother's Day, holidays)\n\n## Team Building\n\n- Monthly team outings (budgeted in [[Budget Planning]])\n- Quarterly team dinner after [[Quarterly Business Review]]\n- Annual summer picnic\n- [[Daily Standup Process]] \"kudos\" moment for peer recognition\n\n## Professional Development\n\n- See [[Training and Onboarding]] for certification opportunities\n- Conference attendance for leads (one per year)\n- Book club (current read: \"Setting the Table\" by Danny Meyer)\n\n## Wellness Check-ins\n\n- Monthly anonymous pulse survey (3 questions)\n- Quarterly 1:1 with direct manager\n- Annual comprehensive satisfaction survey\n- Results discussed at [[Quarterly Business Review]] and influence [[Growth Roadmap]] people strategy\n\n## Open Door Policy\n\nMaya and Jordan maintain an open door policy. Any [[Team Roster]] member can schedule time to discuss concerns, ideas, or career goals. We also monitor the [[Customer Feedback Program]] for any mentions of specific team members to address both praise and concerns.\n\n## Future Plans\n\nAs we grow per the [[Growth Roadmap]], we plan to add dental insurance and increase the wellness stipend. This is tracked in [[Budget Planning]] as a future line item.\n"
     },
     {
-      "id": 34,
+      "id": 35,
       "label": "Loyalty Program",
       "group": "team",
       "is_hub": false,
       "excerpt": "# Loyalty Program\n\nThe Bloom & Brew loyalty program, \"The Regulars,\" rewards our most dedicated customers and drives repeat visits. It launched 8 months ago and has exceeded all expectations.\n\n## Program Structure\n\n### Tiers\n\n| Tier | Requirement | Benefits |\n|------|------------|----------|\n| Seedling | Sign up | Every 10th coffee free, birthday bouquet ($25 value) |\n| Sprout | $500 lifetime spend | 10% off arrangements, early access to workshops |\n| In Full Bloom | $1,500 lifetime spend | 15% off all products, free monthly coffee bag, VIP event invites |\n\n## Enrollment\n\n- 450 active members (see [[Email Marketing]] VIP segment)\n- Sign up via: POS at register, website, QR code in-store\n- Enrollment has been boosted by [[Social Media Strategy]] promotions and [[Seasonal Campaigns]]\n\n## Points System\n\n- $1 spent = 1 point\n- 100 points = $5 reward\n- Bonus point events during [[Seasonal Campaigns]] (double points days)\n- Workshop attendance = 25 bonus points\n\n## Program Performance\n\n| Metric | Value |\n|--------|-------|\n| Enrollment rate | 15% of new customers |\n| Active rate | 72% |\n| Avg spend increase | +35% vs non-members |\n| Visit frequency | 2.8x more than non-members |\n\n## Technology\n\nCurrently tracked via our POS system and a supplementary spreadsheet. The [[Tech Stack and Tools]] evaluation includes a potential upgrade to a dedicated loyalty platform. Budget allocated in [[Budget Planning]].\n\n## Integration\n\n- [[Email Marketing]]: Loyalty members get exclusive content and early access\n- [[Customer Feedback Program]]: Loyalty members are surveyed separately for deeper insights\n- [[Partnership Opportunities]]: Partner discounts stack with loyalty benefits\n- [[Product Catalog]]: Loyalty-exclusive seasonal items\n- [[Pricing Strategy]]: Loyalty discounts factored into margin calculations\n\n## Growth Goals\n\nPer the [[Growth Roadmap]], we aim for 800 loyalty members within the next year. Strategies include referral bonuses, workshop enrollment incentives, and [[Social Media Strategy]] giveaways. Tracked at [[Quarterly Business Review]].\n"
     },
     {
-      "id": 35,
+      "id": 36,
       "label": "Team Roster",
       "group": "team",
       "is_hub": false,
       "excerpt": "# Team Roster\n\nBloom & Brew is a team of 9 passionate people who share a love for craft, community, and creating beautiful experiences.\n\n## Leadership\n\n### Maya Chen \u2014 Owner & Creative Director\n- Founded Bloom & Brew in 2021\n- Background: 10 years in floral design, certified barista\n- Handles: Strategic planning, [[Growth Roadmap]], [[Partnership Opportunities]], [[Quarterly Business Review]]\n- Email: maya@bloomandbrew.com\n\n### Jordan Williams \u2014 Operations Manager\n- Joined 2022, promoted from lead barista\n- Manages: [[Shift Scheduling]], [[Inventory Management]], [[Facilities Maintenance]]\n- Oversees [[Daily Standup Process]]\n- Keyholder: Yes\n\n## Coffee Team\n\n### Aisha Patel \u2014 Lead Barista\n- 3 years specialty coffee experience\n- Latte art champion (regional competition finalist!)\n- Leads coffee [[Training and Onboarding]]\n- Keyholder: Yes\n\n### Marcus Rivera \u2014 Barista\n- 1 year at B&B, cross-trained in basic floral prep\n- Studying for SCA certification\n- Staff discount: 50% (see [[Pricing Strategy]])\n\n### Lily Thompson \u2014 Part-time Barista\n- Weekend and holiday coverage specialist\n- College student, incredibly reliable\n- Key player during [[Seasonal Campaigns]]\n\n## Floral Team\n\n### Sarah Nakamura \u2014 Lead Floral Designer\n- 8 years experience, previously managed a floral studio\n- Designs our [[Product Catalog]] signature arrangements\n- Leads floral workshops and [[Training and Onboarding]] for floral team\n- Keyholder: Yes\n\n### David Okonkwo \u2014 Floral Designer\n- 2 years at B&B, incredible eye for color\n- Manages [[Social Media Strategy]] photography for floral content\n- Handles wedding consultations (see [[Partnership Opportunities]])\n\n## Support\n\n### Emma Larsson \u2014 Marketing & Community Manager\n- Manages [[Email Marketing]], [[Social Media Strategy]], [[Brand Guidelines]]\n- Runs the [[Customer Feedback Program]] and [[Loyalty Program]]\n- Part-time (25 hrs/week)\n\n### Carlos Diaz \u2014 Weekend/Events Staff\n- Cross-trained in both coffee and floral\n- Event setup and workshop assistant\n- Considering full-time (discussed in [[Employee Wellness Program]] review)\n\n## Hiring Plans\n\nWe plan to add one full-time barista and one part-time events coordinator by Q2 next year (see [[Growth Roadmap]] and [[Budget Planning]]).\n"
     },
     {
-      "id": 36,
+      "id": 37,
       "label": "Training and Onboarding",
       "group": "team",
       "is_hub": false,
@@ -513,7 +520,7 @@ const GRAPH = {
     },
     {
       "source": 30,
-      "target": 6,
+      "target": 5,
       "type": "spoke"
     },
     {
@@ -523,7 +530,7 @@ const GRAPH = {
     },
     {
       "source": 32,
-      "target": 7,
+      "target": 6,
       "type": "spoke"
     },
     {
@@ -543,6 +550,11 @@ const GRAPH = {
     },
     {
       "source": 36,
+      "target": 7,
+      "type": "spoke"
+    },
+    {
+      "source": 37,
       "target": 7,
       "type": "spoke"
     },
@@ -608,12 +620,7 @@ const GRAPH = {
     },
     {
       "source": 11,
-      "target": 31,
-      "type": "reference"
-    },
-    {
-      "source": 11,
-      "target": 33,
+      "target": 32,
       "type": "reference"
     },
     {
@@ -629,6 +636,11 @@ const GRAPH = {
     {
       "source": 11,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 11,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -678,11 +690,6 @@ const GRAPH = {
     },
     {
       "source": 13,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 13,
       "target": 31,
       "type": "reference"
     },
@@ -704,6 +711,11 @@ const GRAPH = {
     {
       "source": 13,
       "target": 35,
+      "type": "reference"
+    },
+    {
+      "source": 13,
+      "target": 36,
       "type": "reference"
     },
     {
@@ -738,11 +750,6 @@ const GRAPH = {
     },
     {
       "source": 14,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 14,
       "target": 31,
       "type": "reference"
     },
@@ -764,6 +771,11 @@ const GRAPH = {
     {
       "source": 14,
       "target": 35,
+      "type": "reference"
+    },
+    {
+      "source": 14,
+      "target": 36,
       "type": "reference"
     },
     {
@@ -818,11 +830,6 @@ const GRAPH = {
     },
     {
       "source": 15,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 15,
       "target": 31,
       "type": "reference"
     },
@@ -849,6 +856,11 @@ const GRAPH = {
     {
       "source": 15,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 15,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -883,17 +895,17 @@ const GRAPH = {
     },
     {
       "source": 16,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 16,
       "target": 31,
       "type": "reference"
     },
     {
       "source": 16,
-      "target": 34,
+      "target": 32,
+      "type": "reference"
+    },
+    {
+      "source": 16,
+      "target": 35,
       "type": "reference"
     },
     {
@@ -928,11 +940,6 @@ const GRAPH = {
     },
     {
       "source": 17,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 17,
       "target": 31,
       "type": "reference"
     },
@@ -943,12 +950,17 @@ const GRAPH = {
     },
     {
       "source": 17,
-      "target": 35,
+      "target": 33,
       "type": "reference"
     },
     {
       "source": 17,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 17,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -973,22 +985,22 @@ const GRAPH = {
     },
     {
       "source": 18,
-      "target": 31,
-      "type": "reference"
-    },
-    {
-      "source": 18,
       "target": 32,
       "type": "reference"
     },
     {
       "source": 18,
-      "target": 34,
+      "target": 33,
       "type": "reference"
     },
     {
       "source": 18,
       "target": 35,
+      "type": "reference"
+    },
+    {
+      "source": 18,
+      "target": 36,
       "type": "reference"
     },
     {
@@ -1003,17 +1015,17 @@ const GRAPH = {
     },
     {
       "source": 19,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 19,
-      "target": 34,
+      "target": 31,
       "type": "reference"
     },
     {
       "source": 19,
       "target": 35,
+      "type": "reference"
+    },
+    {
+      "source": 19,
+      "target": 36,
       "type": "reference"
     },
     {
@@ -1028,17 +1040,12 @@ const GRAPH = {
     },
     {
       "source": 20,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 20,
       "target": 31,
       "type": "reference"
     },
     {
       "source": 20,
-      "target": 33,
+      "target": 32,
       "type": "reference"
     },
     {
@@ -1057,13 +1064,13 @@ const GRAPH = {
       "type": "reference"
     },
     {
-      "source": 21,
-      "target": 27,
+      "source": 20,
+      "target": 37,
       "type": "reference"
     },
     {
       "source": 21,
-      "target": 31,
+      "target": 27,
       "type": "reference"
     },
     {
@@ -1073,12 +1080,17 @@ const GRAPH = {
     },
     {
       "source": 21,
-      "target": 34,
+      "target": 33,
       "type": "reference"
     },
     {
       "source": 21,
       "target": 35,
+      "type": "reference"
+    },
+    {
+      "source": 21,
+      "target": 36,
       "type": "reference"
     },
     {
@@ -1093,11 +1105,6 @@ const GRAPH = {
     },
     {
       "source": 23,
-      "target": 31,
-      "type": "reference"
-    },
-    {
-      "source": 23,
       "target": 32,
       "type": "reference"
     },
@@ -1108,12 +1115,17 @@ const GRAPH = {
     },
     {
       "source": 23,
-      "target": 35,
+      "target": 34,
       "type": "reference"
     },
     {
       "source": 23,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 23,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -1128,17 +1140,17 @@ const GRAPH = {
     },
     {
       "source": 24,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 24,
-      "target": 35,
+      "target": 31,
       "type": "reference"
     },
     {
       "source": 24,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 24,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -1153,22 +1165,22 @@ const GRAPH = {
     },
     {
       "source": 25,
-      "target": 30,
-      "type": "reference"
-    },
-    {
-      "source": 25,
       "target": 31,
       "type": "reference"
     },
     {
       "source": 25,
-      "target": 35,
+      "target": 32,
       "type": "reference"
     },
     {
       "source": 25,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 25,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -1178,47 +1190,22 @@ const GRAPH = {
     },
     {
       "source": 26,
-      "target": 31,
-      "type": "reference"
-    },
-    {
-      "source": 26,
-      "target": 33,
-      "type": "reference"
-    },
-    {
-      "source": 26,
-      "target": 35,
-      "type": "reference"
-    },
-    {
-      "source": 26,
-      "target": 36,
-      "type": "reference"
-    },
-    {
-      "source": 30,
-      "target": 31,
-      "type": "reference"
-    },
-    {
-      "source": 30,
       "target": 32,
       "type": "reference"
     },
     {
-      "source": 30,
+      "source": 26,
       "target": 34,
       "type": "reference"
     },
     {
-      "source": 30,
-      "target": 35,
+      "source": 26,
+      "target": 36,
       "type": "reference"
     },
     {
-      "source": 30,
-      "target": 36,
+      "source": 26,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -1228,7 +1215,7 @@ const GRAPH = {
     },
     {
       "source": 31,
-      "target": 34,
+      "target": 33,
       "type": "reference"
     },
     {
@@ -1239,6 +1226,11 @@ const GRAPH = {
     {
       "source": 31,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 31,
+      "target": 37,
       "type": "reference"
     },
     {
@@ -1248,17 +1240,22 @@ const GRAPH = {
     },
     {
       "source": 32,
-      "target": 34,
-      "type": "reference"
-    },
-    {
-      "source": 32,
       "target": 35,
       "type": "reference"
     },
     {
       "source": 32,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 32,
+      "target": 37,
+      "type": "reference"
+    },
+    {
+      "source": 33,
+      "target": 34,
       "type": "reference"
     },
     {
@@ -1272,18 +1269,33 @@ const GRAPH = {
       "type": "reference"
     },
     {
-      "source": 34,
-      "target": 35,
+      "source": 33,
+      "target": 37,
       "type": "reference"
     },
     {
       "source": 34,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 34,
+      "target": 37,
       "type": "reference"
     },
     {
       "source": 35,
       "target": 36,
+      "type": "reference"
+    },
+    {
+      "source": 35,
+      "target": 37,
+      "type": "reference"
+    },
+    {
+      "source": 36,
+      "target": 37,
       "type": "reference"
     }
   ],
