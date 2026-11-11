@@ -50,6 +50,25 @@ class AgentOrchestrator:
 
         q_lower = question.lower().strip()
 
+        # 0. Brain / Model Switching Commands
+        if re.search(r'\b(switch|change|set|turn\s*on|activate)\b.*?\b(gemini\s*live|live\s*mode|live\s*brain|live)\b', q_lower):
+            return {
+                "answer": "Switching neural nexus to Gemini Live mode, sir. Voice streaming is active.",
+                "session_id": session_id,
+                "nodes": [],
+                "switch_brain": "gemini-live",
+                "state": "IDLE"
+            }
+
+        if re.search(r'\b(switch|change|set|turn\s*on|activate|back)\b.*?\b(gemini\s*3\.5|gemini\s*3|text\s*mode|text\s*brain|text)\b', q_lower):
+            return {
+                "answer": "Returning to Gemini 3.5 text model, sir. Console and neural voice restored.",
+                "session_id": session_id,
+                "nodes": [],
+                "switch_brain": "gemini-3.5",
+                "state": "IDLE"
+            }
+
         # 1. Emergency Stop & Pause Commands
         if re.match(r'^(stop|halt|cancel|abort|emergency stop|freeze)\b', q_lower):
             broker.trigger_emergency_stop()

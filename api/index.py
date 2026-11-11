@@ -60,14 +60,44 @@ class handler(BaseHTTPRequestHandler):
 
         if path in ["/chat", "/chat/"]:
             question = body.get("question", body.get("message", "")).strip()
+            brain = body.get("brain", "gemini-3.5")
             if not question:
                 self._send_json({"error": "No question provided."}, 400)
                 return
 
-            sys_prompt = (
-                "You are J.A.R.V.I.S., an exceptionally capable, calm, witty, and impeccably refined British desktop AI assistant.\n"
-                "Answer concisely in 1-2 razor-sharp, sophisticated sentences with British butler wit."
-            )
+            q_lower = question.lower().strip()
+            import re
+            if re.search(r'\b(switch|change|set|turn\s*on|activate)\b.*?\b(gemini\s*live|live\s*mode|live\s*brain|live)\b', q_lower):
+                self._send_json({
+                    "answer": "Switching neural nexus to Gemini Live mode, sir. Voice streaming is active.",
+                    "session_id": "vercel-session",
+                    "nodes": [],
+                    "switch_brain": "gemini-live",
+                    "state": "IDLE"
+                })
+                return
+
+            if re.search(r'\b(switch|change|set|turn\s*on|activate|back)\b.*?\b(gemini\s*3\.5|gemini\s*3|text\s*mode|text\s*brain|text)\b', q_lower):
+                self._send_json({
+                    "answer": "Returning to Gemini 3.5 text model, sir. Console and neural voice restored.",
+                    "session_id": "vercel-session",
+                    "nodes": [],
+                    "switch_brain": "gemini-3.5",
+                    "state": "IDLE"
+                })
+                return
+
+            if brain == "gemini-live":
+                sys_prompt = (
+                    "You are J.A.R.V.I.S., an exceptionally capable, calm, witty, and impeccably refined British desktop AI assistant.\n"
+                    "You are operating in real-time voice streaming mode (Gemini Live). Respond in ONE single, crisp, natural conversational sentence with British butler wit."
+                )
+            else:
+                sys_prompt = (
+                    "You are J.A.R.V.I.S., an exceptionally capable, calm, witty, and impeccably refined British desktop AI assistant.\n"
+                    "Answer concisely in 1-2 razor-sharp, sophisticated sentences with British butler wit."
+                )
+
             try:
                 answer = call_gemini(sys_prompt, [{"role": "user", "content": question}])
             except Exception as e:
@@ -79,6 +109,22 @@ class handler(BaseHTTPRequestHandler):
                 "nodes": [],
                 "state": "IDLE"
             })
+        elif path in ["/tts", "/tts/"]:
+            from jarvis.core.gateway import generate_fish_audio_tts
+            text = body.get("text", "").strip()
+            if not text:
+                self._send_json({"error": "No text provided."}, 400)
+                return
+            result, status = generate_fish_audio_tts(text)
+            if isinstance(result, bytes):
+                self.send_response(status)
+                self.send_header("Content-Type", "audio/mpeg")
+                self.send_header("Content-Length", str(len(result)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(result)
+            else:
+                self._send_json(result, status)
         elif path in ["/bridge", "/bridge/"]:
             # Companion bridge status
             companion_url = os.environ.get("JARVIS_COMPANION_URL", "http://localhost:4700")
