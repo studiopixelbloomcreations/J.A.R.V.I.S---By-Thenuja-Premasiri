@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT_DIR))
 import build
 from jarvis.config import load_config, load_user_profile, VIEWER_DIR, SCREENSHOTS_DIR
 from jarvis.core.permissions import broker
-from jarvis.core.gateway import generate_fish_audio_tts
+from jarvis.core.gateway import generate_fish_audio_tts, generate_gemini_live_audio
 from jarvis.core.orchestrator import orchestrator
 from jarvis.skills.registry import registry
 from jarvis.skills.handlers import dispatch_skill
@@ -198,14 +198,23 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_tts(self):
         body = self._read_json()
         text = body.get("text", "").strip()
+        brain = body.get("brain", "gemini-3.5")
         if not text:
             self._send_json({"error": "No text provided"}, 400)
             return
 
-        result, status = generate_fish_audio_tts(text)
+        if brain == "gemini-live":
+            # Gemini Live uses Google's Charon voice
+            result, status = generate_gemini_live_audio(text)
+            content_type = "audio/wav"
+        else:
+            # Gemini 3.5 uses Fish Audio British butler voice
+            result, status = generate_fish_audio_tts(text)
+            content_type = "audio/mpeg"
+
         if isinstance(result, bytes):
             self.send_response(status)
-            self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(result)))
             self.end_headers()
             self.wfile.write(result)

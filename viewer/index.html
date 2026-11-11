@@ -1225,7 +1225,7 @@
       startSpeechListening();
     });
 
-    // ── 2. Three.js ForceGraph3D Setup ──
+    // ── 2. Three.js ForceGraph3D Setup (Expanded Galaxy & Attached Note Labels) ──
     let Graph = null;
     function initThreeForceGraph() {
       if (typeof GRAPH === 'undefined' || !GRAPH.nodes) return;
@@ -1238,21 +1238,124 @@
         .backgroundColor('rgba(0,0,0,0)')
         .showNavInfo(false)
         .nodeId('id')
-        .nodeLabel(n => `<div style="background:rgba(8,12,24,0.92);padding:6px 12px;border-radius:8px;border:1px solid ${getGroupColor(n.group)};"><strong>${n.label}</strong><br/><span style="color:${getGroupColor(n.group)}">${n.is_hub ? '✦ Sector Hub' : n.group}</span></div>`)
-        .nodeColor(n => getGroupColor(n.group))
-        .nodeVal(n => (n.is_hub ? 9 : 3))
-        .linkColor(() => 'rgba(255,255,255,0.08)')
-        .linkWidth(1.2)
-        .linkDirectionalParticles(2)
-        .linkDirectionalParticleSpeed(0.005)
+        .nodeLabel(n => `<div style="background:rgba(8,12,24,0.92);padding:6px 12px;border-radius:8px;border:1px solid ${getGroupColor(n.group)};"><strong>${n.label}</strong><br/><span style="color:${getGroupColor(n.group)}">${n.is_hub ? '📁 Folder Sector Hub' : n.group}</span></div>`)
+        .nodeThreeObject(node => {
+          const group = new THREE.Group();
+          const isHub = node.is_hub;
+          const radius = isHub ? 14 : 5.5;
+          const colorHex = getGroupColor(node.group);
+
+          // 1. Central Glowing Orb Sphere
+          const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
+          const sphereMat = new THREE.MeshLambertMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: isHub ? 0.95 : 0.85
+          });
+          const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+          group.add(sphereMesh);
+
+          // If main folder hub orb, add an outer holographic aura ring
+          if (isHub) {
+            const auraGeo = new THREE.SphereGeometry(radius + 4, 12, 12);
+            const auraMat = new THREE.MeshBasicMaterial({
+              color: colorHex,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.35
+            });
+            group.add(new THREE.Mesh(auraGeo, auraMat));
+          }
+
+          // 2. High-resolution Attached Note Name Label (Always Visible & Faces Camera)
+          const canvas = document.createElement('canvas');
+          canvas.width = 384;
+          canvas.height = 72;
+          const ctx = canvas.getContext('2d');
+
+          const cleanLabel = isHub ? node.label.replace('📁 ', '').toUpperCase() : node.label;
+          ctx.font = isHub ? 'bold 26px Inter, sans-serif' : '20px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const textWidth = ctx.measureText(cleanLabel).width;
+          const pillW = Math.min(360, textWidth + 24);
+          const pillH = isHub ? 38 : 30;
+          const pillX = 192 - pillW / 2;
+          const pillY = 36 - pillH / 2;
+
+          ctx.fillStyle = isHub ? 'rgba(8, 14, 28, 0.9)' : 'rgba(5, 8, 18, 0.78)';
+          ctx.strokeStyle = colorHex;
+          ctx.lineWidth = isHub ? 2.2 : 1;
+          ctx.beginPath();
+          ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = isHub ? '#00ffff' : '#f8fafc';
+          ctx.fillText(cleanLabel, 192, 37);
+
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.minFilter = THREE.LinearFilter;
+          const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+          const sprite = new THREE.Sprite(spriteMat);
+          const sW = isHub ? 52 : 36;
+          const sH = isHub ? 10 : 7;
+          sprite.scale.set(sW, sH, 1);
+          sprite.position.set(0, radius + (isHub ? 13 : 9), 0);
+          group.add(sprite);
+
+          return group;
+        })
+        .linkColor(link => link.type === 'backbone' ? 'rgba(0, 229, 255, 0.35)' : (link.type === 'spoke' ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.05)'))
+        .linkWidth(link => link.type === 'backbone' ? 2.5 : (link.type === 'spoke' ? 1.4 : 0.8))
+        .linkDirectionalParticles(link => link.type === 'backbone' ? 4 : (link.type === 'spoke' ? 2 : 0))
+        .linkDirectionalParticleSpeed(0.004)
         .onNodeClick(node => focusOnNode(node));
+
+      // Configure d3-force-3d simulation for vast expanded galaxy
+      Graph.d3Force('charge').strength(-450);
+      Graph.d3Force('link').distance(link => {
+        if (link.type === 'backbone') return 1000; // Backbone pushes folder hubs far apart!
+        if (link.type === 'spoke') return 80;      // Notes cluster around their folder hub
+        return 220;                                // Cross references
+      });
+
+      // Cluster sector gravity pulling nodes to their folder centroids (Personal far from Finance, etc.)
+      const centroids = (typeof GRAPH !== 'undefined' && GRAPH.centroids) ? GRAPH.centroids : {
+        "personal": [-850, 450, -750],
+        "finance": [850, -350, 750],
+        "operations": [-750, -500, 650],
+        "marketing": [750, 600, -550],
+        "products": [800, -500, -650],
+        "team": [-800, 300, 800],
+        "captures": [0, -900, -450],
+        "apex-logistics": [0, 900, 550]
+      };
+
+      const clusterSectorForce = () => {
+        if (!GRAPH || !GRAPH.nodes) return;
+        for (const n of GRAPH.nodes) {
+          const c = centroids[n.group];
+          if (c) {
+            const pull = n.is_hub ? 0.06 : 0.03;
+            n.vx = (n.vx || 0) + (c[0] - n.x) * pull;
+            n.vy = (n.vy || 0) + (c[1] - n.y) * pull;
+            n.vz = (n.vz || 0) + (c[2] - n.z) * pull;
+          }
+        }
+      };
+      Graph.d3Force('cluster_sector', clusterSectorForce);
 
       // Relax camera distance restrictions for unrestricted zooming
       const controls = Graph.controls();
       if (controls) {
-        controls.minDistance = 20;
-        controls.maxDistance = 3000;
+        controls.minDistance = 30;
+        controls.maxDistance = 5000;
       }
+
+      // Initial camera positioning to view the vast expanded galaxy
+      Graph.cameraPosition({ x: 0, y: 700, z: 1800 }, { x: 0, y: 0, z: 0 }, 1000);
     }
 
     // ── 3. Node Focusing & Inspection ──
@@ -1535,29 +1638,31 @@
       const bubble = document.getElementById('live-transcript-bubble');
 
       if (mode === 'gemini-live') {
-        // Gemini Live: Voice-first mode
-        isFishAudioEnabled = false; // Fish audio automatically disabled for Live streaming
+        // Gemini Live: Uses Google's official Charon voice (Fish Audio disabled)
+        isFishAudioEnabled = false;
         if (modelBadge) {
-          modelBadge.innerText = '⚡ GEMINI LIVE';
+          modelBadge.innerText = '⚡ GEMINI LIVE (CHARON)';
           modelBadge.classList.add('live-active');
+          modelBadge.title = 'Active: Gemini Live with Google Charon voice. Click to switch to Gemini 3.5';
         }
         if (pillInput) {
           pillInput.style.display = 'none'; // Textbox disappears
         }
         if (bubble) {
           bubble.style.display = 'flex'; // Floating transcript bubble appears
-          updateLiveTranscriptBubble('Listening... Speak naturally, sir.');
+          updateLiveTranscriptBubble('Listening with Gemini Live (Charon)... Speak naturally, sir.');
         }
         shouldKeepListening = true;
         startSpeechListening();
-        if (orbInstance) orbInstance.setState('listening', 'LIVE STREAM');
+        if (orbInstance) orbInstance.setState('listening', 'GEMINI LIVE');
       } else {
-        // Gemini 3.5: Text-based mode
+        // Gemini 3.5: Text-based mode with Fish Audio British Butler
         currentBrain = 'gemini-3.5';
         isFishAudioEnabled = true; // Fish audio comes back up
         if (modelBadge) {
           modelBadge.innerText = '✦ GEMINI 3.5';
           modelBadge.classList.remove('live-active');
+          modelBadge.title = 'Active: Gemini 3.5 with Fish Audio Butler. Click to switch to Gemini Live';
         }
         if (pillInput) {
           pillInput.style.display = 'flex'; // Text input bar comes back up
@@ -1943,13 +2048,15 @@
         window.speechSynthesis.cancel();
       }
 
-      // Always use Fish Audio neural British butler voice (no robotic voice!)
+      // Select voice engine according to active brain:
+      // gemini-3.5 -> Fish Audio British Butler
+      // gemini-live -> Google Gemini Live Charon voice (Fish Audio disabled)
       try {
         orbInstance.setState('speaking', 'SYNTHESIZING');
         const res = await fetch('/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text })
+          body: JSON.stringify({ text: text, brain: currentBrain })
         });
 
         const contentType = res.headers.get('content-type') || '';

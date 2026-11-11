@@ -101,8 +101,23 @@ def build_links(notes, label_to_idx):
     return [{'source': s, 'target': t, 'type': 'reference'} for s, t in sorted(links)]
 
 
+FOLDER_CENTROIDS = {
+    "personal":        (-850,  450, -750),  # Top-left rear sector
+    "finance":         ( 850, -350,  750),  # Bottom-right front sector (Far from personal!)
+    "operations":      (-750, -500,  650),  # Bottom-left front sector
+    "marketing":       ( 750,  600, -550),  # Top-right rear sector
+    "products":        ( 800, -500, -650),  # Bottom-right rear sector
+    "team":            (-800,  300,  800),  # Top-left front sector
+    "captures":        (   0, -900, -450),  # Far bottom sector
+    "apex-logistics":  (   0,  900,  550),  # Far top sector
+}
+
+
 def generate_graph(notes_dir):
-    """Generate the full hierarchical galaxy structure."""
+    """Generate the full hierarchical galaxy structure with expanded spatial grouping."""
+    import random
+    import math
+
     # 1. Discover all folders in notes/
     folders = sorted([d.name for d in notes_dir.iterdir() if d.is_dir()])
     has_root_notes = any(f.is_file() and f.suffix.lower() == '.md' for f in notes_dir.iterdir())
@@ -114,17 +129,39 @@ def generate_graph(notes_dir):
     nodes = []
     links = []
     hub_map = {}
+    hub_coords = {}
 
-    # 2. Create Main Hub Orbs (one per folder)
-    for f in folders:
+    # 2. Create Main Hub Orbs (one per folder) anchored in distinct, distant sectors
+    for idx, f in enumerate(folders):
         hub_id = len(nodes)
         hub_map[f] = hub_id
         display_name = f.replace('-', ' ').title()
+
+        if f in FOLDER_CENTROIDS:
+            cx, cy, cz = FOLDER_CENTROIDS[f]
+        else:
+            # Golden spiral on sphere of radius 850 for any additional folders
+            phi = math.acos(1 - 2 * (idx + 0.5) / max(len(folders), 1))
+            theta = math.pi * (1 + 5**0.5) * idx
+            cx = round(850 * math.sin(phi) * math.cos(theta), 1)
+            cy = round(850 * math.sin(phi) * math.sin(theta), 1)
+            cz = round(850 * math.cos(phi), 1)
+
+        hub_coords[f] = (cx, cy, cz)
+
         nodes.append({
             'id': hub_id,
-            'label': f"✦ {display_name}",
+            'label': f"📁 {display_name}",
+            'folder_name': display_name,
             'group': f,
             'is_hub': True,
+            'val': 24,
+            'x': cx,
+            'y': cy,
+            'z': cz,
+            'fx': cx,
+            'fy': cy,
+            'fz': cz,
             'excerpt': f"Main Central Hub for all intelligence, notes, and operations in the '{display_name}' sector."
         })
 
@@ -138,22 +175,38 @@ def generate_graph(notes_dir):
                 'type': 'backbone'
             })
 
-    # 4. Scan all markdown notes
+    # 4. Scan all markdown notes and place them in an orbital shell around their folder hub
     raw_notes = scan_notes(notes_dir)
     label_to_id = {}
 
     for note in raw_notes:
         note_id = len(nodes)
         label_to_id[note['label']] = note_id
+        parent_group = note['group']
+        cx, cy, cz = hub_coords.get(parent_group, (0, 0, 0))
+
+        # Position note in an orbital cluster around its parent folder hub
+        r_offset = random.uniform(60, 130)
+        theta = random.uniform(0, 2 * math.pi)
+        phi = random.uniform(-math.pi / 2, math.pi / 2)
+        nx = cx + r_offset * math.cos(phi) * math.cos(theta)
+        ny = cy + r_offset * math.sin(phi)
+        nz = cz + r_offset * math.cos(phi) * math.sin(theta)
+
         nodes.append({
             'id': note_id,
             'label': note['label'],
-            'group': note['group'],
+            'group': parent_group,
             'is_hub': False,
+            'val': 5,
+            'x': round(nx, 1),
+            'y': round(ny, 1),
+            'z': round(nz, 1),
             'excerpt': note['text']
         })
+
         # Link to its folder's Main Hub Orb (Spoke)
-        parent_hub = hub_map.get(note['group'])
+        parent_hub = hub_map.get(parent_group)
         if parent_hub is not None:
             links.append({
                 'source': note_id,
@@ -168,7 +221,8 @@ def generate_graph(notes_dir):
     return {
         'nodes': nodes,
         'links': links,
-        'groups': folders
+        'groups': folders,
+        'centroids': FOLDER_CENTROIDS
     }
 
 
