@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Galaxy — Bloom &amp; Brew</title>
+  <style>
+    /* ═══════ RESET & BASE ═══════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #000;
+      color: #e0e0e0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ═══════ STARFIELD CANVAS ═══════ */
+    #starfield {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ═══════ GRAPH CONTAINER ═══════ */
+    #graph-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* ═══════ HEADER ═══════ */
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+      pointer-events: none;
+    }
+    #header > * { pointer-events: auto; }
+
+    #header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    #header .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #888;
+      letter-spacing: 0.5px;
+    }
+
+    /* ═══════ BRAIN SWITCHER ═══════ */
+    #brain-switcher {
+      display: inline-flex;
+      background: rgba(18, 18, 38, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 2px;
+      gap: 3px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      margin-left: 6px;
+    }
+    .brain-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .brain-btn:hover { color: #fff; }
+    .brain-btn.active {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(124, 58, 237, 0.45);
+    }
+    .brain-btn.live-active {
+      background: linear-gradient(135deg, #ef4444, #f59e0b);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.55);
+    }
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .action-btn:hover {
+      background: rgba(14, 165, 233, 0.18);
+      border-color: rgba(14, 165, 233, 0.45);
+      color: #38bdf8;
+      box-shadow: 0 0 14px rgba(14, 165, 233, 0.35);
+    }
+
+    /* ═══════ SECURE ORIGIN BANNER ═══════ */
+    #sec-banner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(127, 29, 29, 0.95);
+      border-bottom: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fecaca;
+      padding: 10px 24px;
+      font-size: 12.5px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    }
+    #sec-banner.visible { display: flex; }
+    #sec-banner-btn {
+      background: #f87171;
+      color: #1a0505;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    #sec-banner-btn:hover { background: #fca5a5; }
+
+    /* ═══════ LIVE VOICE INTERFACE (SPEAK ONLY) ═══════ */
+    #live-voice-interface {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0 16px;
+      pointer-events: auto;
+    }
+    .live-orb-btn {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f87171, #ef4444, #991b1b);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.45), inset 0 2px 6px rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 32px;
+      color: #fff;
+      transition: transform 0.25s, box-shadow 0.25s;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .live-orb-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.7);
+    }
+    .live-orb-btn.pulsing {
+      animation: liveOrbPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes liveOrbPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(239, 68, 68, 0.45); }
+      50% { transform: scale(1.15); box-shadow: 0 0 45px rgba(239, 68, 68, 0.9), 0 0 70px rgba(245, 158, 11, 0.6); }
+    }
+    #live-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      font-weight: 600;
+      background: rgba(15, 15, 30, 0.85);
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ═══════ LEGEND ═══════ */
+    #legend {
+      position: fixed;
+      bottom: 20px; left: 20px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px 18px;
+      background: rgba(10, 10, 20, 0.75);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 12px;
+    }
+    #legend h3 {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .legend-item:hover { background: rgba(255,255,255,0.06); }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .legend-label {
+      text-transform: capitalize;
+      color: #aaa;
+    }
+
+    /* ═══════ SIDE PANEL ═══════ */
+    #side-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 380px;
+      max-width: 90vw;
+      height: 100%;
+      z-index: 200;
+      background: rgba(8, 8, 18, 0.92);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+    }
+    #side-panel.open { transform: translateX(0); }
+
+    #panel-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #panel-title {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      flex: 1;
+    }
+
+    #panel-group-badge {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+
+    #panel-close {
+      width: 32px; height: 32px;
+      border: none;
+      background: rgba(255,255,255,0.06);
+      color: #999;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #panel-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    #panel-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    #panel-body .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    #panel-excerpt {
+      font-size: 13.5px;
+      line-height: 1.75;
+      color: #bbb;
+      white-space: pre-wrap;
+    }
+
+    #panel-connections {
+      margin-top: 24px;
+    }
+    #panel-connections .section-label { margin-bottom: 8px; }
+    #conn-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .conn-chip {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .conn-chip:hover {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* ═══════ SEARCH ═══════ */
+    #search-container {
+      position: fixed;
+      top: 18px; right: 20px;
+      z-index: 100;
+    }
+    #search-input {
+      width: 220px;
+      padding: 8px 14px 8px 34px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      background: rgba(10,10,20,0.7);
+      color: #e0e0e0;
+      font-size: 13px;
+      outline: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: border-color 0.2s, width 0.3s;
+    }
+    #search-input:focus {
+      border-color: rgba(167, 139, 250, 0.5);
+      width: 280px;
+    }
+    #search-icon {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: #555;
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* ═══════ CHAT BAR ═══════ */
+    #chat-container {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    #chat-response {
+      max-width: 720px;
+      width: 90%;
+      margin-bottom: 8px;
+      pointer-events: auto;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    #chat-response.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #response-card {
+      background: rgba(12, 12, 28, 0.88);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 18px 22px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 -4px 40px rgba(0,0,0,0.4);
+    }
+
+    #response-text {
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: #d4d4d8;
+    }
+
+    #response-nodes {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+    #response-nodes-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #555;
+      margin-right: 4px;
+    }
+    .ref-chip {
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      color: #a78bfa;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ref-chip:hover {
+      background: rgba(167, 139, 250, 0.25);
+      color: #c4b5fd;
+    }
+
+    #chat-bar {
+      width: 90%;
+      max-width: 720px;
+      padding: 12px 16px 20px;
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #chat-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    #chat-input {
+      width: 100%;
+      padding: 12px 18px 12px 42px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      background: rgba(12, 12, 28, 0.85);
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 -2px 30px rgba(0,0,0,0.3);
+    }
+    #chat-input:focus {
+      border-color: rgba(167, 139, 250, 0.4);
+      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.08), 0 -2px 30px rgba(0,0,0,0.3);
+    }
+    #chat-input::placeholder { color: #555; }
+
+    #chat-input-icon {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: #555;
+      pointer-events: none;
+    }
+
+    #chat-send {
+      width: 44px; height: 44px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+    }
+    #chat-send:hover {
+      background: linear-gradient(135deg, #6d28d9, #4f46e5);
+      box-shadow: 0 2px 20px rgba(124, 58, 237, 0.5);
+      transform: scale(1.05);
+    }
+    #chat-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ═══════ MIC BUTTON & STATUS ═══════ */
+    #chat-mic {
+      width: 44px; height: 44px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+      flex-shrink: 0;
+    }
+    #chat-mic:hover {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      transform: scale(1.05);
+    }
+    #chat-mic.listening {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #f87171;
+      animation: micPulse 1.2s infinite ease-in-out;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+    }
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+      50% { transform: scale(1.08); box-shadow: 0 0 22px rgba(239, 68, 68, 0.8); }
+    }
+
+    #chat-status {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      pointer-events: auto;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+    }
+    #chat-status.visible { display: inline-flex; }
+    #chat-status.listening {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    #chat-status.thinking {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      color: #d8b4fe;
+    }
+    #chat-status.speaking {
+      background: rgba(52, 211, 153, 0.2);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: #6ee7b7;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+      animation: statusBlink 1.2s infinite;
+    }
+    @keyframes statusBlink {
+      0%, 100% { opacity: 0.35; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    #chat-error {
+      color: #f87171;
+      font-size: 12px;
+      margin-top: 4px;
+      padding: 0 4px;
+      display: none;
+    }
+
+    /* Typing indicator */
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      height: 20px;
+    }
+    .typing-dots span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #a78bfa;
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ═══════ TOOLTIP ═══════ */
+    .node-tooltip {
+      background: rgba(15, 15, 30, 0.95) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      border-radius: 8px !important;
+      padding: 8px 14px !important;
+      font-size: 12px !important;
+      color: #ddd !important;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+      pointer-events: none;
+      max-width: 220px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sec-banner">
+    <span>🔒 <strong>Microphone Permission:</strong> Chrome blocks microphone on non-secure origins. Please open via <strong>http://localhost:4700</strong> or set Microphone to "Allow" in site settings.</span>
+    <button id="sec-banner-btn">Go to localhost:4700</button>
+  </div>
+
+  <canvas id="starfield"></canvas>
+  <div id="graph-container"></div>
+
+  <div id="header">
+    <h1>✦ Knowledge Galaxy</h1>
+    <span class="badge" id="node-count"></span>
+    <span class="badge" id="link-count"></span>
+    <div id="brain-switcher">
+      <button class="brain-btn active" id="brain-btn-35" title="Switch to Gemini 3.5 (Text & Voice)">✦ Gemini 3.5</button>
+      <button class="brain-btn" id="brain-btn-live" title="Switch to Gemini Live (Speak Only)">⚡ Gemini Live</button>
+    </div>
+    <button class="action-btn" id="organize-btn" title="Sort loose markdown files in notes/ into proper folders">✦ Organize Archives</button>
+  </div>
+
+  <div id="search-container">
+    <span id="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Search notes…" autocomplete="off" />
+  </div>
+
+  <div id="legend"></div>
+
+  <div id="side-panel">
+    <div id="panel-header">
+      <div>
+        <div id="panel-title"></div>
+        <div id="panel-group-badge"></div>
+      </div>
+      <button id="panel-close">✕</button>
+    </div>
+    <div id="panel-body">
+      <div class="section-label">Excerpt</div>
+      <div id="panel-excerpt"></div>
+      <div id="panel-connections">
+        <div class="section-label">Connections</div>
+        <div id="conn-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ CHAT BAR ═══════ -->
+  <div id="chat-container">
+    <div id="chat-status"><span class="status-dot"></span><span id="chat-status-text"></span></div>
+    
+    <!-- Gemini Live Speak-Only Interface -->
+    <div id="live-voice-interface">
+      <div class="live-orb-container">
+        <div class="live-orb-btn" id="live-orb-btn" title="Click to speak / stop">
+          🎙️
+        </div>
+      </div>
+      <div id="live-hint">Gemini Live · Speak Only (Say "Switch to 3.5" to restore text)</div>
+    </div>
+
+    <div id="chat-response">
+      <div id="response-card">
+        <div id="response-text"></div>
+        <div id="response-nodes">
+          <span id="response-nodes-label">Sources:</span>
+        </div>
+      </div>
+    </div>
+    <div id="chat-bar">
+      <div id="chat-input-wrap">
+        <span id="chat-input-icon">✦</span>
+        <input type="text" id="chat-input" placeholder="Ask your notes a question or click the mic…" autocomplete="off" />
+        <div id="chat-error"></div>
+      </div>
+      <button id="chat-mic" title="Voice Input (Click to speak)">🎙</button>
+      <button id="chat-send" title="Send">➜</button>
+    </div>
+  </div>
+
+  <script src="graph-data.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+
+  <script>
+    // ═══════════════════════════════════════════
+    //  CONFIG & COLOR PALETTE
+    // ═══════════════════════════════════════════
+    const GROUP_COLORS = {
+      captures:   '#06b6d4',  // luminous cyan for voice captures
+      personal:   '#f43f5e',  // radiant rose for personal affairs
+      finance:    '#f59e0b',  // warm amber for capital & revenue
+      marketing:  '#ec4899',  // vibrant magenta for brand & growth
+      operations: '#3b82f6',  // electric blue for studio & facilities
+      products:   '#10b981',  // emerald for coffee & floral lines
+      team:       '#a78bfa',  // ethereal violet for personnel
+      general:    '#94a3b8',  // slate
+      root:       '#94a3b8',
+    };
+
+    function groupColor(g) {
+      if (!g) return '#64748b';
+      if (GROUP_COLORS[g]) return GROUP_COLORS[g];
+      // Deterministic vibrant HSL generator for any dynamic folder/company
+      let hash = 0;
+      for (let i = 0; i < g.length; i++) {
+        hash = g.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 82%, 62%)`;
+    }
+
+    // ═══════════════════════════════════════════
+    //  STARFIELD
+    // ═══════════════════════════════════════════
+    (function initStarfield() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+      const STAR_COUNT = 600;
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        stars = [];
+        for (let i = 0; i < STAR_COUNT; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.4 + 0.2,
+            a: Math.random() * 0.7 + 0.3,
+            speed: Math.random() * 0.0015 + 0.0005,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+
+      function draw(t) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const s of stars) {
+          const twinkle = 0.5 + 0.5 * Math.sin(t * s.speed * 2 + s.phase);
+          const alpha = s.a * (0.4 + 0.6 * twinkle);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, 2 * Math.PI);
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+      requestAnimationFrame(draw);
+    })();
+
+    // ═══════════════════════════════════════════
+    //  BUILD ADJACENCY & NEIGHBOR MAP
+    // ═══════════════════════════════════════════
+    const neighborMap = new Map();   // nodeId → Set of neighbor nodeIds
+    const nodeById = new Map();      // nodeId → node object
+
+    function populateAdjacency() {
+      neighborMap.clear();
+      nodeById.clear();
+      GRAPH.nodes.forEach(n => {
+        neighborMap.set(n.id, new Set());
+        nodeById.set(n.id, n);
+      });
+      GRAPH.links.forEach(l => {
+        const s = typeof l.source === 'object' ? l.source.id : l.source;
+        const t = typeof l.target === 'object' ? l.target.id : l.target;
+        neighborMap.get(s)?.add(t);
+        neighborMap.get(t)?.add(s);
+      });
+    }
+    populateAdjacency();
+
+    // ═══════════════════════════════════════════
+    //  HEADER STATS & LEGEND
+    // ═══════════════════════════════════════════
+    function updateStats() {
+      const noteCount = GRAPH.nodes.filter(n => !n.is_hub).length;
+      document.getElementById('node-count').textContent = `${noteCount} notes`;
+      document.getElementById('link-count').textContent = `${GRAPH.links.length} connections`;
+    }
+    updateStats();
+
+    function buildLegend() {
+      const el = document.getElementById('legend');
+      el.innerHTML = '<h3>Sectors</h3>';
+      GRAPH.groups.forEach(g => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+          <span class="legend-dot" style="color:${groupColor(g)};background:${groupColor(g)}"></span>
+          <span class="legend-label">${g.replace('-', ' ')}</span>
+        `;
+        item.addEventListener('click', () => highlightGroup(g));
+        el.appendChild(item);
+      });
+    }
+    buildLegend();
+
+    // ═══════════════════════════════════════════
+    //  3D FORCE GRAPH
+    // ═══════════════════════════════════════════
+    let selectedNode = null;
+    let highlightNodes = new Set();
+    let highlightLinks = new Set();
+
+    const Graph = ForceGraph3D()(document.getElementById('graph-container'))
+      .graphData(GRAPH)
+      .backgroundColor('rgba(0,0,0,0)')
+      .showNavInfo(false)
+      .nodeId('id')
+      .nodeLabel(n => `<div class="node-tooltip"><strong>${n.label}</strong><br/><span style="color:${groupColor(n.group)}">${n.is_hub ? '✦ Central Hub' : n.group}</span></div>`)
+      .nodeVal(n => {
+        if (n.is_hub) return 20;
+        const conns = neighborMap.get(n.id)?.size || 0;
+        return 2 + conns * 0.75;
+      })
+      .nodeThreeObject(n => {
+        const conns = neighborMap.get(n.id)?.size || 0;
+        const color = groupColor(n.group);
+        const isHighlighted = highlightNodes.has(n.id);
+        const isSelected = selectedNode && selectedNode.id === n.id;
+        const group = new THREE.Group();
+
+        if (n.is_hub) {
+          // ─── MAIN HUB ORB (Central Celestial Folder Suns) ───
+          const hubRadius = 11;
+
+          // Core radiant sphere
+          const geo = new THREE.SphereGeometry(hubRadius, 32, 32);
+          const mat = new THREE.MeshPhongMaterial({
+            color: color,
+            emissive: color,
+            emissiveIntensity: isSelected ? 1.4 : (isHighlighted ? 1.0 : 0.65),
+            shininess: 90,
+            transparent: true,
+            opacity: (highlightNodes.size > 0 && !isHighlighted && !isSelected) ? 0.3 : 0.98,
+          });
+          group.add(new THREE.Mesh(geo, mat));
+
+          // Inner luminous corona
+          const corona1Geo = new THREE.SphereGeometry(hubRadius * 1.55, 24, 24);
+          const corona1Mat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: isSelected ? 0.35 : (isHighlighted ? 0.25 : 0.14),
+          });
+          group.add(new THREE.Mesh(corona1Geo, corona1Mat));
+
+          // Outer celestial aura
+          const corona2Geo = new THREE.SphereGeometry(hubRadius * 2.3, 24, 24);
+          const corona2Mat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: isSelected ? 0.18 : (isHighlighted ? 0.12 : 0.05),
+          });
+          group.add(new THREE.Mesh(corona2Geo, corona2Mat));
+
+          // Text sprite: Bold uppercase sector label
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const fontSize = 48;
+          ctx.font = `800 ${fontSize}px Inter, Segoe UI, sans-serif`;
+          const textWidth = ctx.measureText(n.label).width;
+          canvas.width = textWidth + 30;
+          canvas.height = fontSize + 20;
+          ctx.font = `800 ${fontSize}px Inter, Segoe UI, sans-serif`;
+          const textAlpha = (highlightNodes.size > 0 && !isHighlighted && !isSelected) ? 0.2 : 0.95;
+          ctx.fillStyle = `rgba(255,255,255,${textAlpha})`;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 12;
+          ctx.textBaseline = 'middle';
+          ctx.fillText(n.label.toUpperCase(), 15, canvas.height / 2);
+
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.needsUpdate = true;
+          const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+          const sprite = new THREE.Sprite(spriteMat);
+          const spriteScale = canvas.width / canvas.height;
+          sprite.scale.set(spriteScale * 11, 11, 1);
+          sprite.position.set(0, hubRadius + 10, 0);
+          group.add(sprite);
+
+          return group;
+        }
+
+        // ─── STANDARD NOTE NODE ───
+        const radius = 3.2 + conns * 0.55;
+        const geo = new THREE.SphereGeometry(radius, 24, 24);
+        const mat = new THREE.MeshPhongMaterial({
+          color: color,
+          emissive: color,
+          emissiveIntensity: isSelected ? 1.0 : (isHighlighted ? 0.7 : 0.35),
+          transparent: true,
+          opacity: (highlightNodes.size > 0 && !isHighlighted && !isSelected) ? 0.12 : 0.92,
+          shininess: 60,
+        });
+        group.add(new THREE.Mesh(geo, mat));
+
+        // Glow halo
+        const glowGeo = new THREE.SphereGeometry(radius * 1.8, 24, 24);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: color,
+          transparent: true,
+          opacity: isSelected ? 0.28 : (isHighlighted ? 0.16 : 0.07),
+        });
+        group.add(new THREE.Mesh(glowGeo, glowMat));
+
+        // Text sprite
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const fontSize = 38;
+        ctx.font = `600 ${fontSize}px Inter, Segoe UI, sans-serif`;
+        const textWidth = ctx.measureText(n.label).width;
+        canvas.width = textWidth + 20;
+        canvas.height = fontSize + 16;
+        ctx.font = `600 ${fontSize}px Inter, Segoe UI, sans-serif`;
+        const textAlpha = (highlightNodes.size > 0 && !isHighlighted && !isSelected) ? 0.08 : 0.85;
+        ctx.fillStyle = `rgba(255,255,255,${textAlpha})`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, 10, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(spriteMat);
+        const spriteScale = canvas.width / canvas.height;
+        sprite.scale.set(spriteScale * 6.5, 6.5, 1);
+        sprite.position.set(0, radius + 5, 0);
+        group.add(sprite);
+
+        return group;
+      })
+      .linkColor(l => {
+        const sId = typeof l.source === 'object' ? l.source.id : l.source;
+        const tId = typeof l.target === 'object' ? l.target.id : l.target;
+        const key = `${Math.min(sId,tId)}-${Math.max(sId,tId)}`;
+
+        if (highlightLinks.size > 0) {
+          if (highlightLinks.has(key)) return 'rgba(255, 255, 255, 0.9)';
+          return 'rgba(255, 255, 255, 0.02)';
+        }
+
+        // Backbone links: Golden celestial macro bridge connecting Hub Orbs
+        if (l.type === 'backbone') {
+          return 'rgba(251, 191, 36, 0.55)';
+        }
+        // Spoke links: Colored beam anchoring notes to their folder Hub
+        if (l.type === 'spoke') {
+          const sNode = nodeById.get(sId);
+          const color = sNode ? groupColor(sNode.group) : '#38bdf8';
+          return color + '55';
+        }
+        // Reference links: Subtle cross-citation filaments
+        return 'rgba(255, 255, 255, 0.08)';
+      })
+      .linkWidth(l => {
+        const sId = typeof l.source === 'object' ? l.source.id : l.source;
+        const tId = typeof l.target === 'object' ? l.target.id : l.target;
+        const key = `${Math.min(sId,tId)}-${Math.max(sId,tId)}`;
+
+        if (highlightLinks.has(key)) return 2.8;
+        if (l.type === 'backbone') return 2.5;
+        if (l.type === 'spoke') return 1.4;
+        return 0.5;
+      })
+      .linkOpacity(1.0)
+      .onNodeClick(handleNodeClick)
+      .onBackgroundClick(clearSelection)
+      .d3AlphaDecay(0.015)
+      .d3VelocityDecay(0.2)
+      .warmupTicks(120)
+      .cooldownTicks(300);
+
+    // ─── SPACING NODES APART INTO AN EXPANSIVE GALAXY ───
+    // Strong negative charge repels hubs and notes so they form distinct solar systems
+    Graph.d3Force('charge')
+      .strength(node => (node && node.is_hub) ? -2400 : -650)
+      .distanceMax(700);
+
+    // Link distances: hubs form wide outer constellation; notes cluster comfortably around their hub
+    Graph.d3Force('link')
+      .distance(link => {
+        if (link.type === 'backbone') return 250; // Spacious central hub backbone ring
+        if (link.type === 'spoke') return 80;     // Notes orbit close to their folder hub
+        return 145;                               // Reference links have breathing space
+      })
+      .strength(link => {
+        if (link.type === 'backbone') return 0.7;
+        if (link.type === 'spoke') return 0.85;   // Strong solar system cohesion
+        return 0.06;                              // Low cross-tension prevents graph collapse
+      });
+
+    Graph.cameraPosition({ x: 0, y: 0, z: 460 });
+
+    // Add ambient + point lights
+    const scene = Graph.scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const pointLight = new THREE.PointLight(0xffffff, 1.0, 800);
+    pointLight.position.set(100, 200, 150);
+    scene.add(pointLight);
+
+    // ═══════════════════════════════════════════
+    //  IDLE DRIFT (slow auto-rotation)
+    // ═══════════════════════════════════════════
+    let driftAngle = 0;
+    let driftActive = true;
+
+    (function drift() {
+      if (driftActive) {
+        driftAngle += 0.0006;
+        const cam = Graph.camera();
+        const dist = cam.position.length();
+        cam.position.x = Math.cos(driftAngle) * dist;
+        cam.position.z = Math.sin(driftAngle) * dist;
+        cam.lookAt(0, 0, 0);
+      }
+      requestAnimationFrame(drift);
+    })();
+
+    // Pause drift on user interaction, resume after idle
+    let driftTimer = null;
+    const graphEl = document.getElementById('graph-container');
+    graphEl.addEventListener('mousedown', () => { driftActive = false; clearTimeout(driftTimer); });
+    graphEl.addEventListener('wheel', () => { driftActive = false; clearTimeout(driftTimer); driftTimer = setTimeout(() => { driftActive = true; }, 8000); });
+    graphEl.addEventListener('mouseup', () => { driftTimer = setTimeout(() => { driftActive = true; }, 8000); });
+
+    // ═══════════════════════════════════════════
+    //  NODE CLICK → FLY + HIGHLIGHT + PANEL
+    // ═══════════════════════════════════════════
+    function handleNodeClick(node) {
+      driftActive = false;
+      clearTimeout(driftTimer);
+
+      selectedNode = node;
+      highlightNodes.clear();
+      highlightLinks.clear();
+
+      // Highlight this node and its neighbors
+      highlightNodes.add(node.id);
+      const neighbors = neighborMap.get(node.id) || new Set();
+      neighbors.forEach(nId => highlightNodes.add(nId));
+
+      // Highlight the links
+      GRAPH.links.forEach(l => {
+        const sId = typeof l.source === 'object' ? l.source.id : l.source;
+        const tId = typeof l.target === 'object' ? l.target.id : l.target;
+        if (sId === node.id || tId === node.id) {
+          const key = `${Math.min(sId,tId)}-${Math.max(sId,tId)}`;
+          highlightLinks.add(key);
+        }
+      });
+
+      // Refresh visuals
+      Graph.nodeThreeObject(Graph.nodeThreeObject());
+      Graph.linkColor(Graph.linkColor());
+      Graph.linkWidth(Graph.linkWidth());
+
+      // Fly camera to the node
+      const distance = 120;
+      const pos = node;
+      Graph.cameraPosition(
+        { x: pos.x + distance * 0.5, y: pos.y + distance * 0.3, z: pos.z + distance * 0.8 },
+        { x: pos.x, y: pos.y, z: pos.z },
+        1500
+      );
+
+      // Open side panel
+      openPanel(node);
+
+      driftTimer = setTimeout(() => { driftActive = true; }, 15000);
+    }
+
+    function clearSelection() {
+      selectedNode = null;
+      highlightNodes.clear();
+      highlightLinks.clear();
+      Graph.nodeThreeObject(Graph.nodeThreeObject());
+      Graph.linkColor(Graph.linkColor());
+      Graph.linkWidth(Graph.linkWidth());
+      closePanel();
+    }
+
+    function highlightGroup(group) {
+      driftActive = false;
+      clearTimeout(driftTimer);
+      selectedNode = null;
+      highlightNodes.clear();
+      highlightLinks.clear();
+
+      GRAPH.nodes.forEach(n => {
+        if (n.group === group) highlightNodes.add(n.id);
+      });
+
+      Graph.nodeThreeObject(Graph.nodeThreeObject());
+      Graph.linkColor(Graph.linkColor());
+
+      driftTimer = setTimeout(() => {
+        highlightNodes.clear();
+        Graph.nodeThreeObject(Graph.nodeThreeObject());
+        Graph.linkColor(Graph.linkColor());
+        driftActive = true;
+      }, 5000);
+    }
+
+    // ═══════════════════════════════════════════
+    //  SIDE PANEL
+    // ═══════════════════════════════════════════
+    const sidePanel = document.getElementById('side-panel');
+    const panelTitle = document.getElementById('panel-title');
+    const panelGroupBadge = document.getElementById('panel-group-badge');
+    const panelExcerpt = document.getElementById('panel-excerpt');
+    const connList = document.getElementById('conn-list');
+    const panelClose = document.getElementById('panel-close');
+
+    panelClose.addEventListener('click', () => { closePanel(); clearSelection(); });
+
+    function openPanel(node) {
+      const color = groupColor(node.group);
+      panelTitle.textContent = node.label;
+      panelTitle.style.color = color;
+      panelGroupBadge.textContent = node.is_hub ? '✦ Central Hub' : node.group.replace('-', ' ');
+      panelGroupBadge.style.background = color + '22';
+      panelGroupBadge.style.color = color;
+      panelGroupBadge.style.border = `1px solid ${color}55`;
+
+      if (node.is_hub) {
+        panelExcerpt.textContent = `${node.excerpt}\n\nThis Main Hub commands all planetary notes within the '${node.group.replace('-', ' ')}' sector. Linked directly to all other celestial hubs across the galactic backbone.`;
+      } else {
+        panelExcerpt.textContent = node.excerpt;
+      }
+
+      // Build connections list
+      connList.innerHTML = '';
+      const neighbors = neighborMap.get(node.id) || new Set();
+      neighbors.forEach(nId => {
+        const neighbor = nodeById.get(nId);
+        if (!neighbor) return;
+        const chip = document.createElement('span');
+        chip.className = 'conn-chip';
+        chip.textContent = neighbor.label;
+        chip.style.borderColor = groupColor(neighbor.group) + '44';
+        chip.addEventListener('click', () => handleNodeClick(neighbor));
+        connList.appendChild(chip);
+      });
+
+      sidePanel.classList.add('open');
+    }
+
+    function closePanel() {
+      sidePanel.classList.remove('open');
+    }
+
+    // ═══════════════════════════════════════════
+    //  SEARCH
+    // ═══════════════════════════════════════════
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim().toLowerCase();
+      if (!query) {
+        clearSelection();
+        return;
+      }
+
+      highlightNodes.clear();
+      highlightLinks.clear();
+      selectedNode = null;
+
+      const matches = GRAPH.nodes.filter(n =>
+        n.label.toLowerCase().includes(query) ||
+        n.group.toLowerCase().includes(query) ||
+        n.excerpt.toLowerCase().includes(query)
+      );
+
+      if (matches.length > 0) {
+        matches.forEach(n => highlightNodes.add(n.id));
+        Graph.nodeThreeObject(Graph.nodeThreeObject());
+        Graph.linkColor(Graph.linkColor());
+
+        // If single match, fly to it
+        if (matches.length === 1) {
+          handleNodeClick(matches[0]);
+        }
+      }
+    });
+
+    // ESC to clear
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        clearSelection();
+        searchInput.blur();
+      }
+    });
+
+    // ═══════════════════════════════════════════
+    //  RESPONSIVE RESIZE
+    // ═══════════════════════════════════════════
+    window.addEventListener('resize', () => {
+      Graph.width(window.innerWidth);
+      Graph.height(window.innerHeight);
+    });
+
+    // ═══════════════════════════════════════════
+    //  VOICE & CHAT — Ask your notes a question
+    // ═══════════════════════════════════════════
+    const chatInput = document.getElementById('chat-input');
+    const chatInputWrap = document.getElementById('chat-input-wrap');
+    const chatSend = document.getElementById('chat-send');
+    const chatMic = document.getElementById('chat-mic');
+    const chatStatus = document.getElementById('chat-status');
+    const chatStatusText = document.getElementById('chat-status-text');
+    const chatResponse = document.getElementById('chat-response');
+    const responseText = document.getElementById('response-text');
+    const responseNodes = document.getElementById('response-nodes');
+    const chatError = document.getElementById('chat-error');
+    const brainBtn35 = document.getElementById('brain-btn-35');
+    const brainBtnLive = document.getElementById('brain-btn-live');
+    const liveVoiceInterface = document.getElementById('live-voice-interface');
+    const liveOrbBtn = document.getElementById('live-orb-btn');
+    const secBanner = document.getElementById('sec-banner');
+    const secBannerBtn = document.getElementById('sec-banner-btn');
+
+    // ─── Secure Context Check ─────────────────────────────────
+    if (!window.isSecureContext) {
+      secBanner.classList.add('visible');
+      secBannerBtn.onclick = () => {
+        window.location.href = 'http://localhost:4700';
+      };
+    }
+
+    // ─── Brain Switching State ────────────────────────────────
+    let currentBrain = 'gemini-3.5';
+
+    function switchBrain(newBrain, announce = true) {
+      currentBrain = newBrain;
+      if (newBrain === 'gemini-live') {
+        brainBtnLive.classList.add('live-active');
+        brainBtn35.classList.remove('active');
+        // Hide text box & standard buttons for Gemini Live (speak only)
+        chatInputWrap.style.display = 'none';
+        chatSend.style.display = 'none';
+        chatMic.style.display = 'none';
+        liveVoiceInterface.style.display = 'flex';
+        if (announce) {
+          speakBrowserVoice("Switched to Gemini Live brain. Speak-only mode is active and Fish Audio is disabled.");
+        }
+      } else {
+        brainBtn35.classList.add('active');
+        brainBtnLive.classList.remove('live-active');
+        // Restore text box & standard buttons for Gemini 3.5
+        chatInputWrap.style.display = 'block';
+        chatSend.style.display = 'flex';
+        chatMic.style.display = 'flex';
+        liveVoiceInterface.style.display = 'none';
+        if (announce) {
+          speakBrowserVoice("Switched back to Gemini 3.5 brain. Text input and Fish Audio are active.");
+        }
+      }
+    }
+
+    brainBtn35.addEventListener('click', () => switchBrain('gemini-3.5', false));
+    brainBtnLive.addEventListener('click', () => switchBrain('gemini-live', false));
+
+    // Generate a session ID for conversation continuity
+    const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    let chatBusy = false;
+
+    // ─── Status indicator ─────────────────────────────────────
+    function setStatus(mode, text) {
+      if (!mode) {
+        chatStatus.className = '';
+        return;
+      }
+      chatStatus.className = 'visible ' + mode;
+      chatStatusText.textContent = text;
+    }
+
+    // ─── Boot Greeting ────────────────────────────────────────
+    const currentHour = new Date().getHours();
+    const timeGreeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
+    function getBootGreetingText() {
+      const actualNoteCount = GRAPH.nodes.filter(n => !n.is_hub).length;
+      return `${timeGreeting}, sir. ${actualNoteCount} notes indexed across ${GRAPH.groups.length} sectors, all present and accounted for.`;
+    }
+    let bootGreetingSpoken = false;
+
+    function playBootGreeting() {
+      if (bootGreetingSpoken) return;
+      bootGreetingSpoken = true;
+      speakAnswer(getBootGreetingText());
+    }
+
+    // Immediately present greeting visually on load
+    responseText.textContent = getBootGreetingText();
+    chatResponse.classList.add('visible');
+
+    // ─── Audio Unlock for Browsers ────────────────────────────
+    let audioUnlocked = false;
+    function unlockAudio() {
+      if (!audioUnlocked) {
+        audioUnlocked = true;
+        if ('speechSynthesis' in window) {
+          const silent = new SpeechSynthesisUtterance('');
+          silent.volume = 0;
+          window.speechSynthesis.speak(silent);
+        }
+      }
+      playBootGreeting();
+    }
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+
+    // ─── Text-to-Speech (Fish Audio + Browser Fallback) ───────
+    let britishVoice = null;
+    let audioPlayer = null;
+
+    function initVoices() {
+      if (!('speechSynthesis' in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+
+      britishVoice = 
+        voices.find(v => v.lang.toLowerCase() === 'en-gb') ||
+        voices.find(v => v.lang.toLowerCase().startsWith('en-gb')) ||
+        voices.find(v => /british|uk|united kingdom/i.test(v.name)) ||
+        voices.find(v => v.lang.toLowerCase().startsWith('en')) ||
+        voices[0];
+    }
+
+    if ('speechSynthesis' in window) {
+      initVoices();
+      window.speechSynthesis.onvoiceschanged = initVoices;
+    }
+
+    function cleanTextForSpeech(text) {
+      return text
+        .replace(/\[\d+\]/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/[*_#`~]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function speakBrowserVoice(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      const clean = cleanTextForSpeech(text);
+      if (!clean) return;
+
+      const utterance = new SpeechSynthesisUtterance(clean);
+      if (britishVoice) {
+        utterance.voice = britishVoice;
+      }
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+        setStatus('speaking', '● speaking…');
+      };
+      utterance.onend = () => {
+        setStatus(null);
+      };
+      utterance.onerror = () => {
+        setStatus(null);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    async function playFishAudio(text) {
+      try {
+        const resp = await fetch('/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanTextForSpeech(text) }),
+        });
+        const contentType = resp.headers.get('content-type') || '';
+        if (contentType.includes('audio/mpeg')) {
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          if (audioPlayer) {
+            audioPlayer.pause();
+          }
+          audioPlayer = new Audio(url);
+          setStatus('speaking', '● speaking (Fish Audio)…');
+          audioPlayer.onended = () => {
+            setStatus(null);
+            URL.revokeObjectURL(url);
+          };
+          audioPlayer.onerror = () => {
+            setStatus(null);
+            speakBrowserVoice(text);
+          };
+          await audioPlayer.play();
+          return true;
+        } else {
+          return false;
+        }
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function speakAnswer(text) {
+      window.speechSynthesis.cancel();
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+
+      // If in Gemini Live, Fish Audio is automatically DISABLED:
+      if (currentBrain === 'gemini-live') {
+        speakBrowserVoice(text);
+        return;
+      }
+
+      // In Gemini 3.5 mode, Fish Audio is ENABLED:
+      const fishPlayed = await playFishAudio(text);
+      if (!fishPlayed) {
+        speakBrowserVoice(text);
+      }
+    }
+
+    // ─── Speech Recognition (webkitSpeechRecognition) ─────────
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        chatMic.classList.add('listening');
+        liveOrbBtn.classList.add('pulsing');
+        setStatus('listening', '● listening…');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        chatInput.value = transcript;
+        if (currentBrain === 'gemini-live') {
+          responseText.textContent = transcript;
+          chatResponse.classList.add('visible');
+        }
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        chatMic.classList.remove('listening');
+        liveOrbBtn.classList.remove('pulsing');
+        if (chatInput.value.trim().length > 0) {
+          sendQuestion();
+        } else {
+          setStatus(null);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        isListening = false;
+        chatMic.classList.remove('listening');
+        liveOrbBtn.classList.remove('pulsing');
+        setStatus(null);
+        if (event.error === 'not-allowed') {
+          chatError.innerHTML = '🔒 Microphone blocked. Click the lock/tune icon in Chrome address bar to Allow.';
+          chatError.style.display = 'block';
+        } else if (event.error !== 'no-speech') {
+          chatError.textContent = 'Voice error: ' + event.error;
+          chatError.style.display = 'block';
+        }
+      };
+
+      function toggleSpeechRecognition() {
+        unlockAudio();
+        window.speechSynthesis.cancel();
+        if (audioPlayer) audioPlayer.pause();
+        chatError.style.display = 'none';
+
+        if (isListening) {
+          recognition.stop();
+        } else {
+          try {
+            recognition.start();
+          } catch (e) {
+            recognition.stop();
+          }
+        }
+      }
+
+      chatMic.addEventListener('click', toggleSpeechRecognition);
+      liveOrbBtn.addEventListener('click', toggleSpeechRecognition);
+    } else {
+      chatMic.title = 'Speech recognition requires Google Chrome';
+      chatMic.style.opacity = '0.5';
+      const noSpeechHandler = () => {
+        chatError.textContent = 'Speech recognition requires Google Chrome on a secure origin (http://localhost:4700).';
+        chatError.style.display = 'block';
+      };
+      chatMic.addEventListener('click', noSpeechHandler);
+      liveOrbBtn.addEventListener('click', noSpeechHandler);
+    }
+
+    // ─── Galaxy Visual Proof ─────────────────────────────────
+    function proveSourceGalaxy(sourceNodeIds) {
+      if (!sourceNodeIds || sourceNodeIds.length === 0) return;
+
+      driftActive = false;
+      clearTimeout(driftTimer);
+
+      const validNodes = sourceNodeIds.map(id => nodeById.get(id)).filter(Boolean);
+      if (validNodes.length === 0) return;
+
+      if (validNodes.length >= 4) {
+        // ─── CLUSTER MODE (4+ notes): Light up the entire cluster ───
+        selectedNode = null;
+        highlightNodes.clear();
+        highlightLinks.clear();
+
+        // Light up all source nodes
+        validNodes.forEach(n => highlightNodes.add(n.id));
+
+        // Light up all links connecting these cluster nodes
+        GRAPH.links.forEach(l => {
+          const sId = typeof l.source === 'object' ? l.source.id : l.source;
+          const tId = typeof l.target === 'object' ? l.target.id : l.target;
+          if (highlightNodes.has(sId) && highlightNodes.has(tId)) {
+            highlightLinks.add(`${Math.min(sId, tId)}-${Math.max(sId, tId)}`);
+          }
+        });
+
+        // Refresh 3D visuals with high glow
+        Graph.nodeThreeObject(Graph.nodeThreeObject());
+        Graph.linkColor(Graph.linkColor());
+        Graph.linkWidth(Graph.linkWidth());
+
+        // Calculate center of mass and bounding distance for the cluster
+        let sumX = 0, sumY = 0, sumZ = 0;
+        validNodes.forEach(n => {
+          sumX += n.x || 0;
+          sumY += n.y || 0;
+          sumZ += n.z || 0;
+        });
+        const centerX = sumX / validNodes.length;
+        const centerY = sumY / validNodes.length;
+        const centerZ = sumZ / validNodes.length;
+
+        let maxDist = 0;
+        validNodes.forEach(n => {
+          const dx = (n.x || 0) - centerX;
+          const dy = (n.y || 0) - centerY;
+          const dz = (n.z || 0) - centerZ;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (dist > maxDist) maxDist = dist;
+        });
+
+        // Smoothly fly camera to frame the whole glowing cluster
+        const camDist = Math.max(170, maxDist * 2.4);
+        Graph.cameraPosition(
+          { x: centerX + camDist * 0.35, y: centerY + camDist * 0.25, z: centerZ + camDist * 0.9 },
+          { x: centerX, y: centerY, z: centerZ },
+          1600
+        );
+
+        // Keep side panel closed so the wide cluster view is unobstructed
+        closePanel();
+
+        driftTimer = setTimeout(() => { driftActive = true; }, 18000);
+
+      } else {
+        // ─── TOP SOURCE NODE MODE (< 4 notes) ──────────────────────
+        // Fly camera directly to the primary source node, light up direct neighbors, and open side panel
+        const topNode = validNodes[0];
+        handleNodeClick(topNode);
+      }
+    }
+
+    // ─── Live Dynamic Graph Synchronization ─────────────────
+    function refreshGraphStructures(data) {
+      if (!data || !data.graph) return;
+      GRAPH = data.graph;
+      populateAdjacency();
+      updateStats();
+      buildLegend();
+      Graph.graphData(GRAPH);
+    }
+
+    // ─── Live Brain Growth via /remember ─────────────────────
+    async function executeRemember(question) {
+      chatBusy = true;
+      chatSend.disabled = true;
+      chatError.style.display = 'none';
+      setStatus('thinking', '● analyzing & researching…');
+
+      responseText.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      responseNodes.innerHTML = '';
+      chatResponse.classList.add('visible');
+
+      try {
+        const resp = await fetch('/remember', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: question }),
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+          chatError.textContent = data.error;
+          chatError.style.display = 'block';
+          chatResponse.classList.remove('visible');
+          setStatus(null);
+          return;
+        }
+
+        // 1. Refresh live graph data & celestial hubs
+        refreshGraphStructures(data);
+
+        // 2. Locate newly born note
+        const newNodeId = data.new_node_id || (data.node ? data.node.id : null);
+        const newNode = newNodeId !== null ? nodeById.get(newNodeId) : null;
+
+        if (newNode) {
+          // 3. Highlight the node and its celestial connections
+          driftActive = false;
+          clearTimeout(driftTimer);
+          selectedNode = newNode;
+          highlightNodes.clear();
+          highlightLinks.clear();
+          highlightNodes.add(newNode.id);
+          const neighbors = neighborMap.get(newNode.id) || new Set();
+          neighbors.forEach(nId => highlightNodes.add(nId));
+
+          GRAPH.links.forEach(l => {
+            const s = typeof l.source === 'object' ? l.source.id : l.source;
+            const t = typeof l.target === 'object' ? l.target.id : l.target;
+            if (s === newNode.id || t === newNode.id) {
+              highlightLinks.add(`${Math.min(s, t)}-${Math.max(s, t)}`);
+            }
+          });
+
+          Graph.nodeThreeObject(Graph.nodeThreeObject());
+          Graph.linkColor(Graph.linkColor());
+          Graph.linkWidth(Graph.linkWidth());
+
+          // 4. Fly camera smoothly to the newly synthesized note
+          const flyDist = 110;
+          Graph.cameraPosition(
+            { x: (newNode.x || 0) + flyDist * 0.45, y: (newNode.y || 0) + flyDist * 0.3, z: (newNode.z || 0) + flyDist * 0.8 },
+            { x: newNode.x || 0, y: newNode.y || 0, z: newNode.z || 0 },
+            1600
+          );
+
+          // 5. Open side panel displaying full deep research doc
+          openPanel(newNode);
+        }
+
+        // 6. Display witty butler confirmation & speak out loud
+        responseText.textContent = data.answer;
+        const folderColor = groupColor(data.folder || (newNode ? newNode.group : 'operations'));
+        const labelText = newNode ? newNode.label : (data.node ? data.node.label : 'Archived Note');
+        responseNodes.innerHTML = `<span class="ref-chip" style="border-color:${folderColor};color:${folderColor};">✦ Synthesized: ${labelText}</span>`;
+        speakAnswer(data.answer);
+
+        chatInput.value = '';
+        driftTimer = setTimeout(() => { driftActive = true; }, 18000);
+
+      } catch (err) {
+        chatError.textContent = 'Failed to archive thought: ' + err.message;
+        chatError.style.display = 'block';
+        chatResponse.classList.remove('visible');
+        setStatus(null);
+      } finally {
+        chatBusy = false;
+        chatSend.disabled = false;
+        if (currentBrain === 'gemini-3.5') {
+          chatInput.focus();
+        }
+      }
+    }
+
+    // ─── Send Question ────────────────────────────────────────
+    async function sendQuestion() {
+      const question = chatInput.value.trim();
+      if (!question || chatBusy) return;
+
+      unlockAudio();
+      window.speechSynthesis.cancel();
+      if (audioPlayer) audioPlayer.pause();
+
+      // Intercept "remember that..." or "remember ..." to grow the brain live
+      if (/^(please\s+)?remember(\s+that)?\s+/i.test(question)) {
+        await executeRemember(question);
+        return;
+      }
+
+      chatBusy = true;
+      chatSend.disabled = true;
+      chatError.style.display = 'none';
+      setStatus('thinking', '● thinking…');
+
+      // Show typing indicator
+      responseText.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      responseNodes.innerHTML = '';
+      chatResponse.classList.add('visible');
+
+      try {
+        const resp = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, session_id: SESSION_ID, brain: currentBrain }),
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+          chatError.textContent = data.error;
+          chatError.style.display = 'block';
+          chatResponse.classList.remove('visible');
+          setStatus(null);
+          return;
+        }
+
+        // If the query requested a brain switch, update UI state
+        if (data.switch_brain) {
+          switchBrain(data.switch_brain, false);
+        }
+
+        // If graph was updated (via auto-remember or auto-organize), refresh structures
+        if (data.graph) {
+          refreshGraphStructures(data);
+        }
+
+        // Display answer text
+        responseText.textContent = data.answer;
+
+        // If this was an intelligence synthesis event (new note generated)
+        const newNodeId = data.new_node_id || (data.node ? data.node.id : null);
+        if (newNodeId !== null && nodeById.has(newNodeId)) {
+          const newNode = nodeById.get(newNodeId);
+          const folderColor = groupColor(newNode.group);
+          responseNodes.innerHTML = `<span class="ref-chip" style="border-color:${folderColor};color:${folderColor};">✦ Synthesized: ${newNode.label}</span>`;
+          handleNodeClick(newNode);
+        } else if (data.nodes && data.nodes.length > 0) {
+          // Display source nodes as clickable chips
+          responseNodes.innerHTML = '<span id="response-nodes-label">Sources:</span>';
+          data.nodes.forEach(nodeId => {
+            const node = nodeById.get(nodeId);
+            if (!node) return;
+
+            const chip = document.createElement('span');
+            chip.className = 'ref-chip';
+            chip.textContent = node.label;
+            chip.addEventListener('click', () => handleNodeClick(node));
+            responseNodes.appendChild(chip);
+          });
+
+          // Fly to top source node + neighbors + side panel, or cluster if 4+
+          proveSourceGalaxy(data.nodes);
+        } else {
+          responseNodes.innerHTML = '';
+        }
+
+        // Speak the answer out loud
+        speakAnswer(data.answer);
+
+        chatInput.value = '';
+      } catch (err) {
+        chatError.textContent = 'Failed to reach the server. Is it running?';
+        chatError.style.display = 'block';
+        chatResponse.classList.remove('visible');
+        setStatus(null);
+      } finally {
+        chatBusy = false;
+        chatSend.disabled = false;
+        if (currentBrain === 'gemini-3.5') {
+          chatInput.focus();
+        }
+      }
+    }
+
+    // ─── Organize Archives Button ─────────────────────────────
+    const organizeBtn = document.getElementById('organize-btn');
+    if (organizeBtn) {
+      organizeBtn.addEventListener('click', async () => {
+        if (chatBusy) return;
+        chatBusy = true;
+        setStatus('thinking', '● organizing archives…');
+        try {
+          const resp = await fetch('/organize', { method: 'POST' });
+          const data = await resp.json();
+          if (data.graph) {
+            refreshGraphStructures(data);
+          }
+          const msg = data.organized && data.organized.length > 0
+            ? `Archives sorted, sir. I have classified ${data.organized.length} unassigned document(s) into their respective sectors. The galactic hubs and spokes are refreshed.`
+            : `Your archives remain in immaculate order, sir. No unassigned files were discovered in the root directory.`;
+
+          setStatus(null);
+          responseText.textContent = msg;
+          responseNodes.innerHTML = '';
+          chatResponse.classList.add('visible');
+          speakAnswer(msg);
+        } catch (err) {
+          setStatus(null);
+          chatError.textContent = 'Organization failed: ' + err.message;
+          chatError.style.display = 'block';
+        } finally {
+          chatBusy = false;
+        }
+      });
+    }
+
+    chatSend.addEventListener('click', sendQuestion);
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendQuestion();
+      }
+    });
+  </script>
+</body>
+</html>

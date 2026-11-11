@@ -1,0 +1,34 @@
+# Secrets and configuration with API keys
+config.json
+.env
+.env.local
+.env.*.local
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js / Vercel
+node_modules/
+.next/
+out/
+build/
+.vercel/
+
+# Runtime screenshots and data (preserve directory with .gitkeep)
+storage/screenshots/*.jpg
+storage/screenshots/*.png
+!storage/screenshots/.gitkeep
+storage/data/*.db
+storage/data/*.json
+!storage/data/.gitkeep
+
+# Operating system artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store

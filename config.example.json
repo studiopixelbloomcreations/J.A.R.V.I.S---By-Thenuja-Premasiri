@@ -1,0 +1,16 @@
+{
+  "api_key": "YOUR_GEMINI_API_KEY",
+  "model": "gemini-3.5-flash-lite",
+  "fallback_models": [
+    "gemini-3.5-flash",
+    "gemini-2.5-flash"
+  ],
+  "fish_audio": {
+    "api_key": "YOUR_FISH_AUDIO_API_KEY",
+    "model": "s2.1-pro-free",
+    "reference_id": "05b36da8574341d0803391491850db20"
+  },
+  "port": 4700,
+  "system_personality": "butler",
+  "risk_level_threshold": "consequential"
+}
