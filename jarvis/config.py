@@ -40,9 +40,31 @@ def load_config():
         return DEFAULT_CONFIG.copy()
 
     try:
-        data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        data = json.loads(CONFIG_FILE.read_text(encoding="utf-8")) if CONFIG_FILE.exists() else {}
         merged = DEFAULT_CONFIG.copy()
         merged.update(data)
+
+        # Environment variable overrides (e.g. on Vercel / Docker / Production)
+        if os.environ.get("GEMINI_API_KEY"):
+            merged["api_key"] = os.environ.get("GEMINI_API_KEY")
+        if os.environ.get("DEFAULT_MODEL"):
+            merged["model"] = os.environ.get("DEFAULT_MODEL")
+        if os.environ.get("FALLBACK_MODELS"):
+            merged["fallback_models"] = [m.strip() for m in os.environ.get("FALLBACK_MODELS").split(",") if m.strip()]
+        if os.environ.get("FISH_AUDIO_API_KEY"):
+            merged.setdefault("fish_audio", {})["api_key"] = os.environ.get("FISH_AUDIO_API_KEY")
+        if os.environ.get("FISH_AUDIO_VOICE_REF"):
+            merged.setdefault("fish_audio", {})["reference_id"] = os.environ.get("FISH_AUDIO_VOICE_REF")
+        if os.environ.get("FISH_AUDIO_MODEL"):
+            merged.setdefault("fish_audio", {})["model"] = os.environ.get("FISH_AUDIO_MODEL")
+        if os.environ.get("PORT"):
+            try:
+                merged["port"] = int(os.environ.get("PORT"))
+            except ValueError:
+                pass
+        if os.environ.get("SYSTEM_PERSONALITY"):
+            merged["system_personality"] = os.environ.get("SYSTEM_PERSONALITY")
+
         return merged
     except Exception as e:
         print(f"  ⚠ Error reading config.json: {e}")
