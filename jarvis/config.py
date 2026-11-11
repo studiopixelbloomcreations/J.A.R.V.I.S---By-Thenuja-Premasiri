@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     "api_key": "",
     "model": "gemini-3.5-flash-lite",
     "fallback_models": ["gemini-3.5-flash", "gemini-2.5-flash"],
+    "gemini_live_voice": "Charon",
     "fish_audio": {
         "api_key": "",
         "model": "s2.1-pro-free",
@@ -57,6 +58,8 @@ def load_config():
             merged.setdefault("fish_audio", {})["reference_id"] = os.environ.get("FISH_AUDIO_VOICE_REF")
         if os.environ.get("FISH_AUDIO_MODEL"):
             merged.setdefault("fish_audio", {})["model"] = os.environ.get("FISH_AUDIO_MODEL")
+        if os.environ.get("GEMINI_LIVE_VOICE"):
+            merged["gemini_live_voice"] = os.environ.get("GEMINI_LIVE_VOICE")
         if os.environ.get("PORT"):
             try:
                 merged["port"] = int(os.environ.get("PORT"))
