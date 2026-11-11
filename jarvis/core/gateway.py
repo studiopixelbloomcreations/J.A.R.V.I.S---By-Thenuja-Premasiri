@@ -31,8 +31,14 @@ def execute_gemini_request(api_key, model, payload, timeout=14):
         return "No text response generated."
 
 
-def call_gemini(system_prompt, messages, max_tokens=600, temperature=0.3):
+def call_gemini(system_prompt, messages=None, max_tokens=600, temperature=0.3):
     """Calls Gemini API with automatic model fallback."""
+    if messages is None:
+        messages = [{"role": "user", "content": system_prompt}]
+        system_prompt = "You are J.A.R.V.I.S., an intelligent personal AI assistant."
+    elif isinstance(messages, str):
+        messages = [{"role": "user", "content": messages}]
+
     config = load_config()
     api_key = config.get("api_key")
     if not api_key:
@@ -116,3 +122,7 @@ def generate_fish_audio_tts(text):
             return audio_bytes, 200
     except Exception as e:
         return {"fallback": True, "error": str(e)}, 200
+
+
+# Alias for unified speech gateway
+generate_speech_audio = generate_fish_audio_tts
