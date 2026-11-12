@@ -80,6 +80,25 @@ class AgentOrchestrator:
                 "state": "IDLE"
             }
 
+        # 0a. Dual-Screen UI View Switching Commands (Main UI vs Knowledge Base UI)
+        if re.search(r'\b(go\s*to|open|show|display|launch|switch\s*to)\b.*?\b(knowledge\s*base|knowledge|galaxy|3d\s*galaxy|neural\s*galaxy|graph)\b', q_lower):
+            return {
+                "answer": "Opening Knowledge Base neural galaxy, sir. All sector hubs loaded.",
+                "session_id": session_id,
+                "nodes": [],
+                "switch_ui": "knowledge-base",
+                "state": "IDLE"
+            }
+
+        if re.search(r'\b(go\s*back|back|return|return\s*to\s*main|close\s*knowledge\s*base|main\s*ui|main\s*screen|main\s*console|workshop)\b', q_lower):
+            return {
+                "answer": "Returning to main console, sir.",
+                "session_id": session_id,
+                "nodes": [],
+                "switch_ui": "main",
+                "state": "IDLE"
+            }
+
         # 0b. Direct Wake Word / Standalone Greeting check
         if re.match(r'^(?:hey\s+)?(?:jarvis|ජාවිස්|ජාර්විස්)[.!?]*$', q_lower):
             return {

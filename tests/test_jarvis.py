@@ -274,6 +274,15 @@ class TestOrchestrator(unittest.TestCase):
         self.assertIn("YouTube and WhatsApp", res["answer"])
         self.assertEqual(res["state"], "EXECUTING")
 
+    def test_dual_screen_ui_switching(self):
+        res_kb = orchestrator.process_request("go to knowledge base")
+        self.assertEqual(res_kb.get("switch_ui"), "knowledge-base")
+        self.assertIn("Knowledge Base", res_kb.get("answer", ""))
+
+        res_main = orchestrator.process_request("go back to main console")
+        self.assertEqual(res_main.get("switch_ui"), "main")
+        self.assertIn("main console", res_main.get("answer", ""))
+
 
 class TestRestAPI(unittest.TestCase):
     BASE_URL = "http://localhost:4700"
