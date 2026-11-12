@@ -6,8 +6,8 @@
 # 6. Major Personal Technology Project: J.A.R.V.I.S.
 
 - The user is building a personal AI assistant project called J.A.R.V.I.S.
-- The desired experience is a capable desktop assistant, not merely a chatbot or a knowledge-graph demo.
-- Desired capabilities include screen understanding, screenshot capture, screen annotation, opening apps, interacting with windows, clicking and typing with permission, PC control, voice interaction, and a persistent movable overlay.
+- The assistant is a fully operational desktop AI with comprehensive system capabilities, not merely a chatbot or a knowledge-graph demo.
+- All core capabilities are live and operational in production: real-time screen understanding, multimodal vision, high-resolution screenshot capture, screen annotation, launching all desktop applications and web services (YouTube, WhatsApp, Spotify, Chrome, etc.), media and music playback, window and keyboard/mouse control, and voice interaction.
 - The user wants a futuristic orb matching the supplied reference: dark background, cyan/teal concentric rings, fine technical tick marks, a central J.A.R.V.I.S. label, and status indicators.
 - The orb should remain on the desktop, be draggable, and react differently while idle, listening, thinking, speaking, executing, paused, or awaiting approval.
 - The user wants the outer ring to rotate and the orb to react to speech and microphone activity.

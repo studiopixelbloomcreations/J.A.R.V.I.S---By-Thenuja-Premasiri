@@ -1837,6 +1837,10 @@
     ]);
 
     function computeSilenceDelay(text) {
+      if (currentBrain === 'gemini-live') {
+        // Ultra-low latency conversational streaming for Gemini Live
+        return 400;
+      }
       if (!text) return 2200;
       const words = text.trim().toLowerCase().split(/\s+/);
       if (words.length === 0) return 2200;
@@ -1992,7 +1996,21 @@
           updateLiveTranscriptBubble(activeQuery || 'Listening... Speak naturally, sir.');
         }
 
-        // Natural Human Cadence Silence Detection (No cutting off mid-sentence)
+        // For Gemini Live: instant zero-latency submission on completed sentence
+        if (currentBrain === 'gemini-live' && finalText.trim().length > 2) {
+          clearTimeout(silenceTimer);
+          let liveClean = finalText.trim();
+          const m = liveClean.toLowerCase().match(/\b(hey\s+)?(jarvis|ජාවිස්|ජාර්විස්)\b/i) || liveClean.match(/(?:hey\s+)?(?:jarvis|ජාවිස්|ජාර්විස්)/i);
+          if (m && m.index < 10) {
+            liveClean = liveClean.slice(m.index + m[0].length).replace(/^[,:\s]+/, '').trim() || liveClean;
+          }
+          if (liveClean.length > 0 && !isRequestInProgress) {
+            handleSpokenInput(liveClean);
+            return;
+          }
+        }
+
+        // Natural Human Cadence Silence Detection (No cutting off mid-sentence in Text mode)
         clearTimeout(silenceTimer);
         const queryToSubmit = (finalText || interimText).trim();
         if (queryToSubmit.length > 2) {

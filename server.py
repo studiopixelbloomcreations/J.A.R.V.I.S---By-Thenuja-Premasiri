@@ -259,9 +259,15 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
             print(f"  ⚠  {msg}")
 
 
+import socketserver
+
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
 def run_http_server(port):
     try:
-        with http.server.HTTPServer(("", port), JarvisHandler) as httpd:
+        with ThreadedHTTPServer(("", port), JarvisHandler) as httpd:
             httpd.serve_forever()
     except Exception as e:
         print(f"Port {port} server stopped: {e}")

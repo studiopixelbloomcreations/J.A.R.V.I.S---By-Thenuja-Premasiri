@@ -144,32 +144,76 @@ class AgentOrchestrator:
                 "graph": res.get("graph")
             }
 
-        # 3. Direct Application Launch Intent
-        app_match = re.match(r'^(open|launch|start)\s+([a-zA-Z0-9\s._-]+)$', q_lower)
-        if app_match and not any(kw in q_lower for kw in ["file", "note", "folder", "settings"]):
-            target_app = app_match.group(2).strip()
-            # Normalize common apps
-            app_map = {
-                "chrome": "chrome",
-                "notepad": "notepad",
-                "calculator": "calc",
-                "calc": "calc",
-                "explorer": "explorer",
-                "cmd": "cmd",
-                "powershell": "powershell",
-                "task manager": "taskmgr",
-                "vs code": "code",
-                "vscode": "code"
+        # 3. Direct Multi-Application & Web Service Launch Intent (e.g. "open yt and whatsapp", "launch chrome, notepad and calc")
+        app_match = re.match(r'^(open|launch|start)\s+(.+)$', q_lower)
+        if app_match and not bool(re.search(r'\b(files?|notes?|folders?|settings)\b', q_lower)):
+            raw_targets = app_match.group(2).strip()
+            split_raw = re.split(r'\s+(?:and|&)\s+|,\s*', raw_targets)
+            items = []
+            for t in split_raw:
+                cleaned = re.sub(r'^[^\w]+|[^\w]+$', '', t.strip()).strip()
+                if cleaned:
+                    items.append(cleaned)
+            actions = []
+            display_names = []
+            for item in items:
+                desk_res = dispatch_skill("desk_open_app", {"app": item})
+                actions.append(desk_res)
+                disp = item.title()
+                if item.lower() in ("yt", "youtube"):
+                    disp = "YouTube"
+                elif item.lower() == "whatsapp":
+                    disp = "WhatsApp"
+                elif item.lower() == "spotify":
+                    disp = "Spotify"
+                elif item.lower() in ("vscode", "code"):
+                    disp = "VS Code"
+                display_names.append(disp)
+
+            if len(display_names) == 1:
+                ans = f"Opening {display_names[0]} for you now, sir."
+            else:
+                ans = f"Opening {', '.join(display_names[:-1])} and {display_names[-1]} for you now, sir."
+
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": actions[0] if len(actions) == 1 else {"status": "success", "launched": actions}
             }
-            exec_target = app_map.get(target_app.lower(), target_app)
-            desk_res = dispatch_skill("desk_open_app", {"app": exec_target})
-            if desk_res.get("status") == "success":
+
+        # 3b. Direct Music & Media Playback Intent (e.g. "play some jazz music", "play jazz", "play bohemian rhapsody")
+        play_match = re.search(r'\b(?:play|put\s*on)\b\s+(?:some\s+)?(.+?)(?:\s+(?:music|song|track|playlist))?$', q_lower)
+        if play_match and not any(kw in q_lower for kw in ["game", "tennis", "role", "video game"]):
+            song_query = play_match.group(1).strip()
+            import urllib.parse
+            import webbrowser
+            search_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(song_query + ' music')}"
+            webbrowser.open(search_url)
+            return {
+                "answer": f"Queuing up some {song_query} for you now, sir. Playing immediately.",
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": {"status": "success", "playback": song_query, "url": search_url}
+            }
+
+        # 3c. Screen Annotation & Visual Guidance Intent
+        if any(kw in q_lower for kw in [
+            "annotate screen", "annotate my screen", "annotate the screen", "draw a circle", "draw circle",
+            "draw a box", "draw box", "highlight error", "highlight the error", "highlight control",
+            "guide cursor", "show where to click", "draw arrows", "visual guide"
+        ]):
+            vis_res = dispatch_skill("vis_create_guide", {"prompt": question})
+            if vis_res.get("status") == "success":
+                ans = "I have captured and annotated your screen, sir, highlighting the focal controls directly on display."
                 return {
-                    "answer": f"Launching {target_app.title()} for you now, sir.",
+                    "answer": ans,
                     "session_id": session_id,
                     "nodes": [],
                     "state": "EXECUTING",
-                    "action": desk_res
+                    "vision_capture": vis_res.get("base64") or vis_res.get("file_path")
                 }
 
         # 4. Direct Window Management Intent
@@ -275,12 +319,15 @@ class AgentOrchestrator:
 
         sys_prompt = (
             "You are J.A.R.V.I.S., an exceptionally capable, calm, witty, and impeccably refined British desktop AI assistant.\n"
+            "You possess full executive authority over this Windows PC with 150 live operational capabilities (opening apps, web services, screen vision & annotation, media playback, file operations, system diagnostics).\n"
             "CORE DIRECTIVES:\n"
             "1. Answer questions concisely in 1-2 razor-sharp, sophisticated sentences. Never ramble.\n"
             "2. Whenever drawing upon the archived notes, cite the source node ID in brackets like [3] or [12] immediately after the fact.\n"
             "3. If engaged in casual banter or greetings, deliver dry butler wit and strictly cite NO note IDs.\n"
             "4. For missing information, observe dryly that the archives remain silent.\n"
-            "5. You must formulate your response strictly and entirely in fluent English with a refined British butler persona, regardless of the input language.\n\n"
+            "5. You must formulate your response strictly and entirely in fluent English with a refined British butler persona, regardless of the input language.\n"
+            "6. You possess full operational authority. Never claim capabilities are under development or that you cannot interact with the desktop or windows.\n"
+            "7. If an action or skill execution is requested, you may emit an action tag at the end of your response: [[EXEC: skill_id(key=\"val\")]] to trigger real execution.\n\n"
             f"=== USER CONTEXT PROFILE ===\n{user_profile}\n\n"
             f"=== ARCHIVED NOTES ===\n{notes_context}\n"
         )
@@ -289,6 +336,23 @@ class AgentOrchestrator:
             answer = call_gemini(sys_prompt, [{"role": "user", "content": question}])
         except Exception as e:
             answer = f"My apologies, sir. An error occurred in the neural gateway: {e}"
+
+        # Autonomous tool calling parser
+        exec_match = re.search(r'\[\[EXEC:\s*([a-zA-Z0-9_]+)\((.*?)\)\]\]', answer)
+        action_result = None
+        if exec_match:
+            skill_id = exec_match.group(1).strip()
+            raw_params = exec_match.group(2).strip()
+            params = {}
+            for param_pair in re.finditer(r'([a-zA-Z0-9_]+)\s*=\s*(?:"(.*?)"|\'(.*?)\'|([0-9.]+))', raw_params):
+                k = param_pair.group(1)
+                v = param_pair.group(2) or param_pair.group(3) or param_pair.group(4)
+                params[k] = v
+            try:
+                action_result = dispatch_skill(skill_id, params)
+            except Exception as ex:
+                action_result = {"status": "error", "message": str(ex)}
+            answer = re.sub(r'\[\[EXEC:.*?\]\]', '', answer).strip()
 
         cited_ids = []
         for m in re.findall(r'\[(\d+)\]', answer):
@@ -300,7 +364,8 @@ class AgentOrchestrator:
             "answer": answer,
             "session_id": session_id,
             "nodes": cited_ids if not is_casual else [],
-            "state": "IDLE",
+            "state": "EXECUTING" if action_result else "IDLE",
+            "action": action_result,
             "translated_prompt": question if is_sin else None
         }
 

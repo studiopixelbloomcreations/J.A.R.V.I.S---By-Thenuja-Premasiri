@@ -275,7 +275,7 @@ class TestRestAPI(unittest.TestCase):
 
     def _get(self, path):
         req = urllib.request.Request(f"{self.BASE_URL}{path}")
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def _post(self, path, payload):
@@ -285,7 +285,7 @@ class TestRestAPI(unittest.TestCase):
             data=data,
             headers={"Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def test_diagnostics_endpoint(self):

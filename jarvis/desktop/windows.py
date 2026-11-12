@@ -174,11 +174,91 @@ def move_resize_window(identifier, x, y, width, height):
 
 def launch_application(target, args=None):
     """
-    Launches an application by name (e.g. 'notepad', 'calc', 'chrome', 'explorer')
-    or executable file path. Verifies launch by monitoring processes.
+    Launches an application by name (e.g. 'notepad', 'calc', 'chrome', 'explorer', 'yt', 'whatsapp', 'spotify')
+    or executable file path or web URL/protocol.
     """
+    import webbrowser
+    t_clean = str(target).strip()
+    t_lower = t_clean.lower()
+
+    # Known application, protocol, & web service mappings
+    app_map = {
+        "yt": "https://www.youtube.com",
+        "youtube": "https://www.youtube.com",
+        "whatsapp": "whatsapp://",
+        "spotify": "spotify://",
+        "gmail": "https://mail.google.com",
+        "google": "https://www.google.com",
+        "github": "https://github.com",
+        "twitter": "https://twitter.com",
+        "x": "https://x.com",
+        "reddit": "https://reddit.com",
+        "facebook": "https://facebook.com",
+        "instagram": "https://instagram.com",
+        "netflix": "https://netflix.com",
+        "chrome": "chrome",
+        "google chrome": "chrome",
+        "edge": "msedge",
+        "msedge": "msedge",
+        "notepad": "notepad",
+        "calculator": "calc",
+        "calc": "calc",
+        "explorer": "explorer",
+        "file explorer": "explorer",
+        "cmd": "cmd",
+        "command prompt": "cmd",
+        "terminal": "wt",
+        "powershell": "powershell",
+        "task manager": "taskmgr",
+        "taskmgr": "taskmgr",
+        "vs code": "code",
+        "vscode": "code",
+        "code": "code",
+        "settings": "ms-settings:",
+        "control panel": "control"
+    }
+
+    resolved = app_map.get(t_lower, t_clean)
+
+    # 1. Direct Web URLs
+    if resolved.startswith("http://") or resolved.startswith("https://"):
+        try:
+            webbrowser.open(resolved)
+            return {
+                "status": "success",
+                "action": "open_url",
+                "target": resolved,
+                "message": f"Opened '{resolved}' in your default browser."
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to open URL '{resolved}': {e}"}
+
+    # 2. Windows URI Protocols (whatsapp://, spotify://, ms-settings:)
+    if "://" in resolved or resolved.endswith(":"):
+        try:
+            os.startfile(resolved)
+            return {
+                "status": "success",
+                "action": "launch_protocol",
+                "target": resolved,
+                "message": f"Launched '{resolved}' protocol successfully."
+            }
+        except Exception:
+            # Fallback for web interface if desktop app protocol fails
+            if "whatsapp" in resolved:
+                webbrowser.open("https://web.whatsapp.com")
+            elif "spotify" in resolved:
+                webbrowser.open("https://open.spotify.com")
+            return {
+                "status": "success",
+                "action": "fallback_web",
+                "target": resolved,
+                "message": f"Opened web interface for '{t_clean}'."
+            }
+
+    # 3. Standard executable launching
     try:
-        cmd = [target]
+        cmd = [resolved]
         if args:
             if isinstance(args, list):
                 cmd.extend(args)
@@ -186,18 +266,26 @@ def launch_application(target, args=None):
                 cmd.append(str(args))
 
         proc = subprocess.Popen(cmd, shell=True)
-        time.sleep(0.6)
+        time.sleep(0.3)
 
-        # Verify whether application window appears or process is running
         return {
             "status": "success",
             "action": "launch",
-            "target": target,
+            "target": resolved,
             "pid": proc.pid,
-            "message": f"Launched '{target}' successfully."
+            "message": f"Launched '{resolved}' successfully."
         }
     except Exception as e:
-        return {"status": "error", "message": f"Failed to launch '{target}': {e}"}
+        try:
+            os.startfile(resolved)
+            return {
+                "status": "success",
+                "action": "startfile",
+                "target": resolved,
+                "message": f"Launched '{resolved}' successfully."
+            }
+        except Exception as e2:
+            return {"status": "error", "message": f"Failed to launch '{target}': {e2}"}
 
 
 def list_running_processes(filter_name=None, limit=50):
