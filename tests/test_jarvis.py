@@ -8,6 +8,9 @@ import unittest
 import json
 import os
 import sys
+import time
+import socket
+import threading
 import urllib.request
 import urllib.parse
 from PIL import Image
@@ -318,6 +321,34 @@ class TestOrchestrator(unittest.TestCase):
 
 class TestRestAPI(unittest.TestCase):
     BASE_URL = "http://localhost:4700"
+    _server = None
+    _thread = None
+
+    @classmethod
+    def setUpClass(cls):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.0)
+        is_running = False
+        try:
+            s.connect(("127.0.0.1", 4700))
+            is_running = True
+        except Exception:
+            is_running = False
+        finally:
+            s.close()
+
+        if not is_running:
+            from server import ThreadedHTTPServer, JarvisHandler
+            cls._server = ThreadedHTTPServer(("127.0.0.1", 4700), JarvisHandler)
+            cls._thread = threading.Thread(target=cls._server.serve_forever, daemon=True)
+            cls._thread.start()
+            time.sleep(1.0)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._server:
+            cls._server.shutdown()
+            cls._server.server_close()
 
     def setUp(self):
         # Ensure server safety state is nominal before test
@@ -399,6 +430,49 @@ class TestRestAPI(unittest.TestCase):
         res_wa = launch_application("open up whatsapp")
         self.assertEqual(res_wa["status"], "success")
         self.assertIn("whatsapp", res_wa["target"])
+
+    def test_top_hud_navigation_pills(self):
+        with open("viewer/index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # 1. Verify all 6 HUD pills exist in the nav bar
+        pills = [
+            ("hud-pill-playlist", "PLAYLIST"),
+            ("hud-pill-play", "PLAY"),
+            ("hud-pill-clear", "CLEAR HUD"),
+            ("hud-pill-saved", "SAVED"),
+            ("hud-pill-cards", "REPORT: CARDS"),
+            ("hud-pill-metadata", "METADATA: DEFAULT")
+        ]
+        for pill_id, label in pills:
+            self.assertIn(f'id="{pill_id}"', html, f"Missing pill {pill_id}")
+            self.assertIn(label, html, f"Missing label {label}")
+
+        # 2. Verify Neon Cyan styling and active states
+        self.assertIn("#00e5ff", html)
+        self.assertIn(".hud-nav-pill.active", html)
+        self.assertIn(".hud-nav-pills-bar", html)
+
+        # 3. Verify Click triggers
+        self.assertIn("toggleHudPill('playlist')", html)
+        self.assertIn("toggleHudPill('play')", html)
+        self.assertIn("toggleHudPill('clear')", html)
+        self.assertIn("toggleHudPill('saved')", html)
+        self.assertIn("toggleHudPill('cards')", html)
+        self.assertIn("toggleHudPill('metadata')", html)
+
+        # 4. Verify Voice triggers in speech recognition
+        self.assertIn("lowerAll.includes('clear hud')", html)
+        self.assertIn("lowerAll.includes('report cards')", html)
+        self.assertIn("lowerAll.includes('open playlist')", html)
+        self.assertIn("lowerAll.includes('show saved')", html)
+        self.assertIn("lowerAll.includes('toggle metadata')", html)
+
+        # 5. Verify Drawers & Overlays
+        self.assertIn('id="hud-playlist-drawer"', html)
+        self.assertIn('id="hud-saved-drawer"', html)
+        self.assertIn('id="hud-metadata-overlay"', html)
+        self.assertIn('id="hud-wipe-overlay"', html)
 
 
 if __name__ == "__main__":
