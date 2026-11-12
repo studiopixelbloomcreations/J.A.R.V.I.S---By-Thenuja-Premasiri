@@ -80,6 +80,15 @@ class AgentOrchestrator:
                 "state": "IDLE"
             }
 
+        # 0b. Direct Wake Word / Standalone Greeting check
+        if re.match(r'^(?:hey\s+)?(?:jarvis|ජාවිස්|ජාර්විස්)[.!?]*$', q_lower):
+            return {
+                "answer": "At your service, sir. How may I assist you?",
+                "session_id": session_id,
+                "nodes": [],
+                "state": "IDLE"
+            }
+
         # 1. Emergency Stop & Pause Commands
         if re.match(r'^(stop|halt|cancel|abort|emergency stop|freeze)\b', q_lower):
             broker.trigger_emergency_stop()

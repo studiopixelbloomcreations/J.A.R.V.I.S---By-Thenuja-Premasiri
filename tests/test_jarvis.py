@@ -261,6 +261,19 @@ class TestOrchestrator(unittest.TestCase):
         self.assertEqual(orchestrator.parse_intent("Show system diagnostics"), "diagnostics")
         self.assertEqual(orchestrator.parse_intent("EMERGENCY STOP NOW"), "emergency_stop")
 
+    def test_direct_wake_word_query(self):
+        res1 = orchestrator.process_request("Jarvis")
+        self.assertIn("At your service, sir", res1["answer"])
+        res2 = orchestrator.process_request("Hey Jarvis")
+        self.assertIn("At your service, sir", res2["answer"])
+        res3 = orchestrator.process_request("ජාවිස්", is_sinhala=True)
+        self.assertIn("At your service, sir", res3["answer"])
+
+    def test_multi_app_launch_intent(self):
+        res = orchestrator.process_request("open yt and whatsapp")
+        self.assertIn("YouTube and WhatsApp", res["answer"])
+        self.assertEqual(res["state"], "EXECUTING")
+
 
 class TestRestAPI(unittest.TestCase):
     BASE_URL = "http://localhost:4700"
