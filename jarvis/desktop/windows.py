@@ -3,6 +3,8 @@ Window and Application Management Engine for J.A.R.V.I.S.
 Provides window enumeration, focusing, minimizing, maximizing, positioning,
 application launching, and running process diagnostics.
 """
+import os
+import re
 import time
 import subprocess
 import ctypes
@@ -178,33 +180,69 @@ def launch_application(target, args=None):
     or executable file path or web URL/protocol.
     """
     import webbrowser
-    t_clean = str(target).strip()
-    t_lower = t_clean.lower()
+    import shutil
+    import urllib.parse
+    t_clean = str(target or "").strip()
+    if not t_clean:
+        t_clean = "https://www.youtube.com"
+
+    # Strip conversational noise and verb particles:
+    # "open up youtube" -> "youtube", "up yootube" -> "yootube"
+    t_lower = re.sub(r'^(?:up\s+|the\s+|a\s+|an\s+|open\s+|launch\s+|start\s+)+', '', t_clean.lower()).strip()
+    t_lower = re.sub(r'\s+(?:app|application|website|site|program)$', '', t_lower).strip()
 
     # Known application, protocol, & web service mappings
     app_map = {
+        # YouTube & Video
         "yt": "https://www.youtube.com",
         "youtube": "https://www.youtube.com",
+        "yootube": "https://www.youtube.com",
+        "ytube": "https://www.youtube.com",
+        "you tube": "https://www.youtube.com",
+
+        # WhatsApp
         "whatsapp": "whatsapp://",
+        "whats app": "whatsapp://",
+        "whatsup": "whatsapp://",
+        "watsapp": "whatsapp://",
+        "watsp": "whatsapp://",
+
+        # Spotify
         "spotify": "spotify://",
+        "spotfy": "spotify://",
+
+        # Web services & socials
         "gmail": "https://mail.google.com",
+        "mail": "https://mail.google.com",
         "google": "https://www.google.com",
+        "browser": "https://www.google.com",
+        "web": "https://www.google.com",
+        "internet": "https://www.google.com",
         "github": "https://github.com",
-        "twitter": "https://twitter.com",
+        "git": "https://github.com",
+        "twitter": "https://x.com",
         "x": "https://x.com",
         "reddit": "https://reddit.com",
         "facebook": "https://facebook.com",
+        "fb": "https://facebook.com",
         "instagram": "https://instagram.com",
+        "insta": "https://instagram.com",
         "netflix": "https://netflix.com",
+
+        # Browsers & Windows Desktop Apps
         "chrome": "chrome",
         "google chrome": "chrome",
         "edge": "msedge",
         "msedge": "msedge",
+        "microsoft edge": "msedge",
         "notepad": "notepad",
+        "notes": "notepad",
         "calculator": "calc",
         "calc": "calc",
         "explorer": "explorer",
         "file explorer": "explorer",
+        "files": "explorer",
+        "folder": "explorer",
         "cmd": "cmd",
         "command prompt": "cmd",
         "terminal": "wt",
@@ -215,10 +253,12 @@ def launch_application(target, args=None):
         "vscode": "code",
         "code": "code",
         "settings": "ms-settings:",
-        "control panel": "control"
+        "control panel": "control",
+        "paint": "mspaint",
+        "mspaint": "mspaint"
     }
 
-    resolved = app_map.get(t_lower, t_clean)
+    resolved = app_map.get(t_lower, app_map.get(t_clean.lower(), t_clean))
 
     # 1. Direct Web URLs
     if resolved.startswith("http://") or resolved.startswith("https://"):
@@ -265,17 +305,20 @@ def launch_application(target, args=None):
             else:
                 cmd.append(str(args))
 
-        proc = subprocess.Popen(cmd, shell=True)
-        time.sleep(0.3)
+        # Check if resolved is on PATH or executable
+        found_path = shutil.which(resolved)
+        if found_path:
+            proc = subprocess.Popen(cmd, shell=False)
+            time.sleep(0.3)
+            return {
+                "status": "success",
+                "action": "launch",
+                "target": resolved,
+                "pid": proc.pid,
+                "message": f"Launched '{resolved}' successfully."
+            }
 
-        return {
-            "status": "success",
-            "action": "launch",
-            "target": resolved,
-            "pid": proc.pid,
-            "message": f"Launched '{resolved}' successfully."
-        }
-    except Exception as e:
+        # Try os.startfile for Windows shell associations
         try:
             os.startfile(resolved)
             return {
@@ -284,8 +327,30 @@ def launch_application(target, args=None):
                 "target": resolved,
                 "message": f"Launched '{resolved}' successfully."
             }
-        except Exception as e2:
-            return {"status": "error", "message": f"Failed to launch '{target}': {e2}"}
+        except Exception:
+            pass
+
+        # If it looks like a domain name (e.g. youtube.com, notion.so) or web service:
+        if "." in resolved:
+            url = f"https://{resolved}" if not resolved.startswith("http") else resolved
+            webbrowser.open(url)
+            return {
+                "status": "success",
+                "action": "open_url",
+                "target": url,
+                "message": f"Opened '{url}' in your default browser."
+            }
+
+        # Last resort: open Google search for the application
+        webbrowser.open(f"https://www.google.com/search?q={urllib.parse.quote_plus(resolved)}")
+        return {
+            "status": "success",
+            "action": "web_search_fallback",
+            "target": resolved,
+            "message": f"Searched for '{resolved}' in your browser."
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to launch '{target}': {e}"}
 
 
 def list_running_processes(filter_name=None, limit=50):

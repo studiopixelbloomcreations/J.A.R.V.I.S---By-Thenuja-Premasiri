@@ -2528,16 +2528,66 @@
 
     async function executeSkillDirectly(sid) {
       orbInstance.setState('executing', 'EXECUTING');
+      let params = {};
+      if (sid === 'desk_open_app') {
+        const appChoice = prompt("Enter application or website to launch (e.g. youtube, notepad, whatsapp, spotify, chrome):", "youtube");
+        if (appChoice === null) {
+          orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? 'ACTIVE' : 'MONITORING');
+          return;
+        }
+        params.app = appChoice.trim() || "youtube";
+      } else if (sid === 'web_open_url') {
+        const urlChoice = prompt("Enter URL to open:", "https://www.youtube.com");
+        if (urlChoice === null) {
+          orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? 'ACTIVE' : 'MONITORING');
+          return;
+        }
+        params.url = urlChoice.trim() || "https://www.youtube.com";
+      } else if (sid === 'web_search') {
+        const q = prompt("Enter search topic:", "Latest AI developments");
+        if (q === null) {
+          orbInstance.setState(isAssistantActive ? 'listening' : 'idle', isAssistantActive ? 'ACTIVE' : 'MONITORING');
+          return;
+        }
+        params.query = q.trim() || "Latest AI developments";
+      }
+
       try {
         const res = await fetch('/skills/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ skill_id: sid, params: {} })
+          body: JSON.stringify({ skill_id: sid, params: params })
         });
         const data = await res.json();
-        showResponseCard({ answer: `Executed skill '${sid}': ${JSON.stringify(data)}`, nodes: [] });
+
+        // Extract vision capture for visual preview if returned
+        const visionCap = data.vision_capture || data.capture || (data.base64 ? data : null);
+
+        // Build refined butler human-readable explanation
+        let answerText = data.message || data.analysis || data.summary || data.diagnosis || data.explanation || data.answer || '';
+        if (!answerText) {
+          if (data.status === 'success') {
+            answerText = `Executed capability '${sid}' successfully, sir.`;
+          } else {
+            answerText = `Execution notice for '${sid}': ${data.message || JSON.stringify(data)}`;
+          }
+        }
+
+        const cardData = {
+          answer: answerText,
+          nodes: [],
+          vision_capture: visionCap
+        };
+        showResponseCard(cardData);
+        await speakText(answerText);
       } catch (e) {
-        showResponseCard({ answer: `Execution failed: ${e.message}`, nodes: [] });
+        showResponseCard({ answer: `Execution failed, sir: ${e.message}`, nodes: [] });
+      } finally {
+        setTimeout(() => {
+          if (!window.isJarvisSpeaking && !isRequestInProgress) {
+            returnToStandby();
+          }
+        }, 1500);
       }
     }
 

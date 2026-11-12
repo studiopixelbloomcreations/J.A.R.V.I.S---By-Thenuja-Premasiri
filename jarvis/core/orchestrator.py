@@ -153,14 +153,17 @@ class AgentOrchestrator:
                 "graph": res.get("graph")
             }
 
-        # 3. Direct Multi-Application & Web Service Launch Intent (e.g. "open yt and whatsapp", "launch chrome, notepad and calc")
-        app_match = re.match(r'^(open|launch|start)\s+(.+)$', q_lower)
-        if app_match and not bool(re.search(r'\b(files?|notes?|folders?|settings)\b', q_lower)):
-            raw_targets = app_match.group(2).strip()
+        # 3. Direct Multi-Application & Web Service Launch Intent (e.g. "open yt and whatsapp", "open up yootube", "can you please open chrome")
+        clean_launch_q = re.sub(r'^(?:jarvis[,:\s]*|hey\s+jarvis[,:\s]*|please[,:\s]*|can\s+you\s+(?:please\s+)?|could\s+you\s+(?:please\s+)?|i\s+want\s+you\s+to\s+|would\s+you\s+(?:kindly\s+)?)+', '', q_lower).strip()
+        app_match = re.match(r'^(?:open|launch|start|run)\s+(?:up\s+)?(?:the\s+)?(.+)$', clean_launch_q)
+        if app_match and not bool(re.search(r'\b(files?|notes?|folders?|settings)\b', clean_launch_q)):
+            raw_targets = app_match.group(1).strip()
             split_raw = re.split(r'\s+(?:and|&)\s+|,\s*', raw_targets)
             items = []
             for t in split_raw:
                 cleaned = re.sub(r'^[^\w]+|[^\w]+$', '', t.strip()).strip()
+                cleaned = re.sub(r'^(?:up\s+|the\s+|a\s+|an\s+|open\s+|launch\s+|start\s+)+', '', cleaned, flags=re.I).strip()
+                cleaned = re.sub(r'\s+(?:app|application|website|site|program)$', '', cleaned, flags=re.I).strip()
                 if cleaned:
                     items.append(cleaned)
             actions = []
@@ -169,14 +172,16 @@ class AgentOrchestrator:
                 desk_res = dispatch_skill("desk_open_app", {"app": item})
                 actions.append(desk_res)
                 disp = item.title()
-                if item.lower() in ("yt", "youtube"):
+                if item.lower() in ("yt", "youtube", "yootube", "ytube", "you tube"):
                     disp = "YouTube"
-                elif item.lower() == "whatsapp":
+                elif item.lower() in ("whatsapp", "whats app", "whatsup", "watsapp", "watsp"):
                     disp = "WhatsApp"
-                elif item.lower() == "spotify":
+                elif item.lower() in ("spotify", "spotfy"):
                     disp = "Spotify"
-                elif item.lower() in ("vscode", "code"):
+                elif item.lower() in ("vscode", "vs code", "code"):
                     disp = "VS Code"
+                elif item.lower() in ("chrome", "google chrome"):
+                    disp = "Google Chrome"
                 display_names.append(disp)
 
             if len(display_names) == 1:

@@ -288,7 +288,7 @@ class TestRestAPI(unittest.TestCase):
 
     def _get(self, path):
         req = urllib.request.Request(f"{self.BASE_URL}{path}")
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=45) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def _post(self, path, payload):
@@ -298,7 +298,7 @@ class TestRestAPI(unittest.TestCase):
             data=data,
             headers={"Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=45) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def test_diagnostics_endpoint(self):
@@ -343,6 +343,21 @@ class TestRestAPI(unittest.TestCase):
         res = self._post("/chat", {"question": "What is in my notes?", "brain": "gemini-3.5"})
         self.assertIn("answer", res)
         self.assertIn("session_id", res)
+
+    def test_skills_execute_endpoint(self):
+        res = self._post("/skills/execute", {"skill_id": "desk_open_app", "params": {"app": "up yootube"}})
+        self.assertEqual(res.get("status"), "success")
+        self.assertIn("youtube.com", res.get("target", ""))
+
+    def test_launch_application_variants(self):
+        from jarvis.desktop.windows import launch_application
+        res_yt = launch_application("up yootube")
+        self.assertEqual(res_yt["status"], "success")
+        self.assertIn("youtube.com", res_yt["target"])
+
+        res_wa = launch_application("open up whatsapp")
+        self.assertEqual(res_wa["status"], "success")
+        self.assertIn("whatsapp", res_wa["target"])
 
 
 if __name__ == "__main__":

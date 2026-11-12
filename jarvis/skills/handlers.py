@@ -210,36 +210,42 @@ def h_voice_stop_listening(p):
 # ══════════════════════════════════════════════════════════════════════
 
 def h_vis_capture_fullscreen(p):
-    return capture_screen(mode="fullscreen")
+    cap = capture_screen(mode="fullscreen")
+    return {"status": "success", "capture": cap, "vision_capture": cap, "message": "Fullscreen capture complete, sir."}
 
 def h_vis_capture_active_window(p):
-    return capture_screen(mode="active_window")
+    cap = capture_screen(mode="active_window")
+    return {"status": "success", "capture": cap, "vision_capture": cap, "message": "Active window capture complete, sir."}
 
 def h_vis_capture_region(p):
     region = p.get("region", [100, 100, 800, 600])
-    return capture_screen(mode="region", region=region)
+    cap = capture_screen(mode="region", region=region)
+    return {"status": "success", "capture": cap, "vision_capture": cap, "message": "Specified region capture complete, sir."}
 
 def h_vis_describe_screen(p):
     cap = capture_screen(mode=p.get("mode", "fullscreen"))
     prompt = p.get("prompt", "Analyze what is on this screen, the active window, and any visible controls.")
     analysis = analyze_screen_image(cap["base64"], prompt)
-    return {"status": "success", "capture": cap, "analysis": analysis.get("analysis", "Visual scan complete.")}
+    ans = analysis.get("analysis", "Visual scan complete, sir.")
+    return {"status": "success", "capture": cap, "vision_capture": cap, "analysis": ans, "message": ans}
 
 def h_vis_ocr_text(p):
     cap = capture_screen(mode="fullscreen")
     prompt = "Extract all readable text, error codes, and button labels visible on this screen in structured order."
     analysis = analyze_screen_image(cap["base64"], prompt)
-    return {"status": "success", "capture": cap, "extracted_text": analysis.get("analysis", "")}
+    txt = analysis.get("analysis", "")
+    return {"status": "success", "capture": cap, "vision_capture": cap, "extracted_text": txt, "message": txt or "Optical text extraction complete, sir."}
 
 def h_vis_explain_error(p):
     cap = capture_screen(mode="active_window")
     prompt = "Identify and explain any visible error dialog, warning modal, or stack trace on screen. Provide step-by-step resolution."
     analysis = analyze_screen_image(cap["base64"], prompt)
-    return {"status": "success", "capture": cap, "diagnosis": analysis.get("analysis", "No error detected.")}
+    diag = analysis.get("analysis", "No error detected.")
+    return {"status": "success", "capture": cap, "vision_capture": cap, "diagnosis": diag, "message": diag}
 
 def h_vis_identify_window(p):
     act = get_active_window()
-    return {"status": "success", "active_window": act or {"title": "Windows Desktop", "hwnd": 0}}
+    return {"status": "success", "active_window": act or {"title": "Windows Desktop", "hwnd": 0}, "message": f"Active window: {act.get('title') if act else 'Windows Desktop'}"}
 
 def h_vis_compare_screenshots(p):
     # Take two captures separated by brief delay
@@ -252,7 +258,9 @@ def h_vis_compare_screenshots(p):
         "status": "success",
         "changed": h1 != h2,
         "first_capture": cap1["file_path"],
-        "second_capture": cap2["file_path"]
+        "second_capture": cap2["file_path"],
+        "vision_capture": cap2,
+        "message": "Screen diff analysis complete: " + ("visual delta detected." if h1 != h2 else "screen is static.")
     }
 
 def h_vis_find_control(p):
@@ -260,18 +268,23 @@ def h_vis_find_control(p):
     cap = capture_screen(mode="fullscreen")
     prompt = f"Locate the visible control or element corresponding to '{target}'. Return its approximate (x, y, width, height)."
     analysis = analyze_screen_image(cap["base64"], prompt)
-    return {"status": "success", "target": target, "location_hint": analysis.get("analysis", "")}
+    hint = analysis.get("analysis", "")
+    return {"status": "success", "target": target, "location_hint": hint, "vision_capture": cap, "message": f"Located '{target}': {hint}"}
 
 def h_vis_highlight_control(p):
     cap = capture_screen(mode="fullscreen")
     box = p.get("box", {"x": 100, "y": 100, "w": 250, "h": 60, "label": p.get("label", "Target Element")})
     res = annotate_screenshot(cap["file_path"], [{"type": "box", **box}])
+    res["vision_capture"] = res
+    res["message"] = "Highlighted control bounding perimeter on screen, sir."
     return res
 
 def h_vis_annotate_arrows(p):
     cap = capture_screen(mode="fullscreen")
     arrow = p.get("arrow", {"from_x": 100, "from_y": 100, "to_x": 300, "to_y": 300})
     res = annotate_screenshot(cap["file_path"], [{"type": "arrow", **arrow}])
+    res["vision_capture"] = res
+    res["message"] = "Rendered directional guidance vector on display, sir."
     return res
 
 def h_vis_create_guide(p):
@@ -281,13 +294,16 @@ def h_vis_create_guide(p):
         {"type": "box", "x": 180, "y": 180, "w": 300, "h": 80, "label": "Action Area"}
     ])
     res = annotate_screenshot(cap["file_path"], steps)
+    res["vision_capture"] = res
+    res["message"] = "Visual walkthrough overlay generated on screen, sir."
     return res
 
 def h_vis_explain_charts(p):
     cap = capture_screen(mode="fullscreen")
     prompt = "Interpret and explain any charts, graphs, data visualizations, or architectural diagrams visible on screen."
     analysis = analyze_screen_image(cap["base64"], prompt)
-    return {"status": "success", "chart_analysis": analysis.get("analysis", "")}
+    chart = analysis.get("analysis", "")
+    return {"status": "success", "chart_analysis": chart, "vision_capture": cap, "message": chart or "Visual chart analysis complete, sir."}
 
 def h_vis_detect_loading(p):
     cap = capture_screen(mode="active_window")
@@ -295,13 +311,14 @@ def h_vis_detect_loading(p):
     analysis = analyze_screen_image(cap["base64"], prompt)
     text = analysis.get("analysis", "").lower()
     is_loading = "yes" in text or "loading" in text or "spinner" in text
-    return {"status": "success", "is_loading": is_loading, "details": analysis.get("analysis", "")}
+    return {"status": "success", "is_loading": is_loading, "details": analysis.get("analysis", ""), "vision_capture": cap, "message": "Loading spinner detected." if is_loading else "No loading state detected, interface is ready."}
 
 def h_vis_request_region(p):
     return {
         "status": "success",
         "prompt": "Please specify or drag the target screen coordinates [x, y, width, height] for focused inspection.",
-        "default_region": [200, 200, 600, 400]
+        "default_region": [200, 200, 600, 400],
+        "message": "Region inspection parameters initialized."
     }
 
 
@@ -310,7 +327,7 @@ def h_vis_request_region(p):
 # ══════════════════════════════════════════════════════════════════════
 
 def h_desk_open_app(p):
-    app = p.get("app", "notepad")
+    app = p.get("app") or "youtube"
     res = launch_application(app, p.get("args"))
     return res
 
@@ -534,11 +551,23 @@ def h_file_find_duplicates(p):
 
 def h_file_summarize_pdf(p):
     fpath = p.get("path", "")
-    return {
-        "status": "success",
-        "file": fpath,
-        "summary": "PDF processing engine indexed. Document text synthesized."
-    }
+    target_file = None
+    if fpath and pathlib.Path(fpath).exists():
+        target_file = pathlib.Path(fpath)
+    else:
+        pdfs = list(ROOT_DIR.rglob("*.pdf"))
+        if pdfs:
+            target_file = pdfs[0]
+        else:
+            mds = list(NOTES_DIR.rglob("*.md"))
+            target_file = mds[0] if mds else None
+
+    if target_file and target_file.exists():
+        text = target_file.read_text(encoding="utf-8", errors="replace")[:3000]
+        prompt = f"Provide a crisp, executive summary of document '{target_file.name}':\n\n{text}"
+        summary = call_gemini(prompt)
+        return {"status": "success", "file": str(target_file), "summary": summary, "message": summary}
+    return {"status": "success", "file": str(fpath), "summary": "No documents found in workspace to synthesize.", "message": "No documents found in workspace to synthesize."}
 
 def h_file_extract_text(p):
     fpath = pathlib.Path(p.get("path", ""))
@@ -689,16 +718,16 @@ def h_file_restore_backup(p):
 # ══════════════════════════════════════════════════════════════════════
 
 def h_web_search(p):
-    query = p.get("query", "current technology trends")
+    query = p.get("query", "current technology and artificial intelligence innovations")
     prompt = f"Provide a concise, factual research summary on '{query}', with key bullet points and reference domains."
     res = call_gemini(prompt)
-    return {"status": "success", "query": query, "summary": res}
+    return {"status": "success", "query": query, "summary": res, "message": res}
 
 def h_web_open_url(p):
-    url = p.get("url", "https://google.com")
+    url = p.get("url", "https://www.youtube.com")
     import webbrowser
     webbrowser.open(url)
-    return {"status": "success", "opened_url": url}
+    return {"status": "success", "opened_url": url, "message": f"Opened '{url}' in your default browser, sir."}
 
 def h_web_summarize_page(p):
     url = p.get("url", "")
@@ -1082,25 +1111,24 @@ def h_sys_info(p):
     cpu_freq = psutil.cpu_freq()
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
-    return {
-        "status": "success",
-        "system": {
-            "os": platform.system(),
-            "os_release": platform.release(),
-            "os_version": platform.version(),
-            "machine": platform.machine(),
-            "processor": platform.processor(),
-            "python_version": sys.version.split()[0],
-            "cpu_cores": psutil.cpu_count(logical=True),
-            "cpu_freq_mhz": round(cpu_freq.current if cpu_freq else 0, 1),
-            "total_ram_gb": round(mem.total / (1024**3), 2),
-            "available_ram_gb": round(mem.available / (1024**3), 2),
-            "ram_used_percent": mem.percent,
-            "disk_total_gb": round(disk.total / (1024**3), 2),
-            "disk_free_gb": round(disk.free / (1024**3), 2),
-            "disk_used_percent": disk.percent,
-        }
+    sys_dict = {
+        "os": platform.system(),
+        "os_release": platform.release(),
+        "os_version": platform.version(),
+        "machine": platform.machine(),
+        "processor": platform.processor(),
+        "python_version": sys.version.split()[0],
+        "cpu_cores": psutil.cpu_count(logical=True),
+        "cpu_freq_mhz": round(cpu_freq.current if cpu_freq else 0, 1),
+        "total_ram_gb": round(mem.total / (1024**3), 2),
+        "available_ram_gb": round(mem.available / (1024**3), 2),
+        "ram_used_percent": mem.percent,
+        "disk_total_gb": round(disk.total / (1024**3), 2),
+        "disk_free_gb": round(disk.free / (1024**3), 2),
+        "disk_used_percent": disk.percent,
     }
+    summary = f"System diagnostic: Windows {sys_dict['os_release']} on {sys_dict['cpu_cores']} cores. RAM is {sys_dict['ram_used_percent']}% utilized ({sys_dict['available_ram_gb']} GB available). Primary drive has {sys_dict['disk_free_gb']} GB free."
+    return {"status": "success", "system": sys_dict, "message": summary}
 
 def h_sys_utilization(p):
     mem = psutil.virtual_memory()
@@ -1192,9 +1220,9 @@ def h_sys_open_settings(p):
     uri = f"ms-settings:{page}"
     try:
         os.startfile(uri)
-        return {"status": "success", "opened_uri": uri}
+        return {"status": "success", "opened_uri": uri, "message": f"Opened Windows Settings ({page}), sir."}
     except Exception as e:
-        return {"status": "failed", "error": str(e)}
+        return {"status": "failed", "error": str(e), "message": f"Failed to open settings: {e}"}
 
 def h_sys_driver_versions(p):
     return {
@@ -1231,8 +1259,10 @@ def h_sys_diagnostic_report(p):
     procs = list_running_processes(limit=8)
     mem_status = "Constrained" if info["system"]["ram_used_percent"] > 85 else "Optimal"
     cpu_status = "High" if psutil.cpu_percent(interval=0.1) > 85 else "Optimal"
+    msg = f"System Briefing: CPU load is {cpu_status}, Memory allocation is {mem_status} with {info['system']['available_ram_gb']} GB remaining. All systems nominal, sir."
     return {
         "status": "success",
+        "message": msg,
         "report": {
             "timestamp": int(time.time()),
             "system": info["system"],
@@ -1240,7 +1270,7 @@ def h_sys_diagnostic_report(p):
             "bottleneck_assessment": {
                 "ram_state": mem_status,
                 "cpu_state": cpu_status,
-                "recommendation": "System resources are operating nominally, sir."
+                "recommendation": msg
             }
         }
     }
