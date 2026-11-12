@@ -7,7 +7,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    if (typeof window !== 'undefined') {
+      delete window.__THREE__;
+      const _origWarn = console.warn;
+      console.warn = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && (args[0].includes('Multiple instances of Three.js') || args[0].includes('deprecated with r150'))) return;
+        _origWarn.apply(console, args);
+      };
+    }
+  </script>
   <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
   <script src="graph-data.js"></script>
   <script src="orb.js"></script>
@@ -1871,8 +1882,6 @@
           }, delay);
         }
       };
-        }
-      };
 
       speechRec.onerror = (e) => {
         if (e.error !== 'no-speech' && e.error !== 'aborted') {
@@ -2183,19 +2192,6 @@
 
       utter.onerror = () => {
         window.isJarvisSpeaking = false;
-      };
-
-      window.speechSynthesis.speak(utter);
-    }
-
-      utter.onstart = () => {
-        if (orbInstance) orbInstance.setState('speaking', 'SPEAKING');
-      };
-
-      utter.onend = () => {
-        if (orbInstance && isOrbActive) {
-          orbInstance.setState(currentBrain === 'gemini-live' ? 'listening' : 'idle', currentBrain === 'gemini-live' ? 'LIVE' : 'ONLINE');
-        }
       };
 
       window.speechSynthesis.speak(utter);

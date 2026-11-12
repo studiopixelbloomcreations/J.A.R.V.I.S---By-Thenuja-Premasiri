@@ -86,6 +86,13 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(fpath.read_bytes())
             else:
                 self.send_error(404, "Screenshot not found")
+        elif path == "/favicon.ico":
+            ico = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">\xe2\x9a\xa1</text></svg>'
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml")
+            self.send_header("Content-Length", str(len(ico)))
+            self.end_headers()
+            self.wfile.write(ico)
         else:
             # Serve static files from viewer/
             super().do_GET()
