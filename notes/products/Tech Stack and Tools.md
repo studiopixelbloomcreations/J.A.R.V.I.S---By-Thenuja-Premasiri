@@ -57,3 +57,10 @@ Total current tech spend: ~$35/month. Planned upgrades budgeted in [[Budget Plan
 ## Training
 
 New hires are trained on all relevant tools during [[Training and Onboarding]] Week 1. Tool-specific quick reference guides are pinned in the relevant Slack channels.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This infrastructure architecture for *Bloom & Brew* reflects a masterclass in capital efficiency—utilizing a bootstrapped, zero-to-low-cost SaaS ecosystem (Square, Google Workspace, Notion) to orchestrate dual retail operations without bleeding cash, while strategically staging paid upgrades for scalable growth.
+* **Operational Context:** When Thenuja queries operational bottlenecks, inventory anomalies, or software expenditures, I shall cross-reference this stack to recommend immediate automation hacks, troubleshoot permission tiers, or model the financial impact of upcoming migrations like *7shifts* or *Lightspeed*.
+* **Cross-Domain Links:** This document serves as the connective tissue bridging **Products** (inventory and recipes), **Finance** (budgeting and Wave bookkeeping), **Marketing** (Mailchimp and Canva assets), and **Operations** (shift scheduling and onboarding), directly feeding into the broader *Growth Roadmap*.

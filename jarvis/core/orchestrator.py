@@ -119,6 +119,20 @@ class AgentOrchestrator:
                     "vision_capture": vis_res.get("capture")
                 }
 
+        # 2b. Learning & Knowledge Expansion Intent
+        if any(kw in q_lower for kw in ["learn everything", "scan database", "learn database", "absorb notes", "synthesize database", "learn all", "absorb knowledge"]):
+            from jarvis.knowledge.learning import learn_and_expand_database
+            res = learn_and_expand_database(force_relearn=False)
+            ans = f"Deep learning scan complete, sir. I have absorbed {res['learned_notes_count']} notes and expanded our neural galaxy to {res['total_nodes']} nodes across all sectors."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "IDLE",
+                "graph_updated": True,
+                "graph": res.get("graph")
+            }
+
         # 3. Direct Application Launch Intent
         app_match = re.match(r'^(open|launch|start)\s+([a-zA-Z0-9\s._-]+)$', q_lower)
         if app_match and not any(kw in q_lower for kw in ["file", "note", "folder", "settings"]):

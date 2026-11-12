@@ -106,6 +106,8 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_tts()
         elif path == "/remember":
             self._handle_remember()
+        elif path == "/learn":
+            self._handle_learn()
         elif path == "/ambient_learn":
             self._handle_ambient_learn()
         elif path == "/organize":
@@ -202,6 +204,13 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
         organized = organize_unassigned_notes()
         fresh = load_graph_data()
         self._send_json({"status": "ok", "organized": organized, "graph": fresh})
+
+    def _handle_learn(self):
+        from jarvis.knowledge.learning import learn_and_expand_database
+        body = self._read_json()
+        force = body.get("force", False)
+        res = learn_and_expand_database(force_relearn=force)
+        self._send_json(res)
 
     def _handle_tts(self):
         body = self._read_json()

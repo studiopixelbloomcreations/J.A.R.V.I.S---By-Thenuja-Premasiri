@@ -102,19 +102,19 @@ def build_links(notes, label_to_idx):
 
 
 FOLDER_CENTROIDS = {
-    "personal":        (-850,  450, -750),  # Top-left rear sector
-    "finance":         ( 850, -350,  750),  # Bottom-right front sector (Far from personal!)
-    "operations":      (-750, -500,  650),  # Bottom-left front sector
-    "marketing":       ( 750,  600, -550),  # Top-right rear sector
-    "products":        ( 800, -500, -650),  # Bottom-right rear sector
-    "team":            (-800,  300,  800),  # Top-left front sector
-    "captures":        (   0, -900, -450),  # Far bottom sector
-    "apex-logistics":  (   0,  900,  550),  # Far top sector
+    "personal":        (-110,   60,  -70),  # Top-left rear sector
+    "finance":         ( 100,  -50,   80),  # Bottom-right front sector
+    "operations":      ( -90,  -70,   65),  # Bottom-left front sector
+    "marketing":       (  70,   85,  -60),  # Top-right rear sector
+    "products":        (  85,  -75,  -60),  # Bottom-right rear sector
+    "team":            ( -80,   45,   90),  # Top-left front sector
+    "captures":        (   0, -100,  -50),  # Bottom sector
+    "apex-logistics":  (   0,  100,   50),  # Top sector
 }
 
 
 def generate_graph(notes_dir):
-    """Generate the full hierarchical galaxy structure with expanded spatial grouping."""
+    """Generate the full hierarchical galaxy structure matching cohesive orbital reference."""
     import random
     import math
 
@@ -131,7 +131,7 @@ def generate_graph(notes_dir):
     hub_map = {}
     hub_coords = {}
 
-    # 2. Create Main Hub Orbs (one per folder) anchored in distinct, distant sectors
+    # 2. Create Main Hub Orbs (one per folder) in balanced celestial sectors
     for idx, f in enumerate(folders):
         hub_id = len(nodes)
         hub_map[f] = hub_id
@@ -140,12 +140,11 @@ def generate_graph(notes_dir):
         if f in FOLDER_CENTROIDS:
             cx, cy, cz = FOLDER_CENTROIDS[f]
         else:
-            # Golden spiral on sphere of radius 850 for any additional folders
             phi = math.acos(1 - 2 * (idx + 0.5) / max(len(folders), 1))
             theta = math.pi * (1 + 5**0.5) * idx
-            cx = round(850 * math.sin(phi) * math.cos(theta), 1)
-            cy = round(850 * math.sin(phi) * math.sin(theta), 1)
-            cz = round(850 * math.cos(phi), 1)
+            cx = round(120 * math.sin(phi) * math.cos(theta), 1)
+            cy = round(120 * math.sin(phi) * math.sin(theta), 1)
+            cz = round(120 * math.cos(phi), 1)
 
         hub_coords[f] = (cx, cy, cz)
 
@@ -155,13 +154,10 @@ def generate_graph(notes_dir):
             'folder_name': display_name,
             'group': f,
             'is_hub': True,
-            'val': 24,
+            'val': 14,
             'x': cx,
             'y': cy,
             'z': cz,
-            'fx': cx,
-            'fy': cy,
-            'fz': cz,
             'excerpt': f"Main Central Hub for all intelligence, notes, and operations in the '{display_name}' sector."
         })
 
@@ -185,8 +181,8 @@ def generate_graph(notes_dir):
         parent_group = note['group']
         cx, cy, cz = hub_coords.get(parent_group, (0, 0, 0))
 
-        # Position note in an orbital cluster around its parent folder hub
-        r_offset = random.uniform(60, 130)
+        # Position note in an orbital cloud around its parent folder hub
+        r_offset = random.uniform(16, 44)
         theta = random.uniform(0, 2 * math.pi)
         phi = random.uniform(-math.pi / 2, math.pi / 2)
         nx = cx + r_offset * math.cos(phi) * math.cos(theta)
@@ -198,7 +194,7 @@ def generate_graph(notes_dir):
             'label': note['label'],
             'group': parent_group,
             'is_hub': False,
-            'val': 5,
+            'val': 4.5,
             'x': round(nx, 1),
             'y': round(ny, 1),
             'z': round(nz, 1),

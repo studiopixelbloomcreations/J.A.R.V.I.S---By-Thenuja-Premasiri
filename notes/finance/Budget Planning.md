@@ -40,3 +40,10 @@ Bloom & Brew's budget is managed on a quarterly cycle, with monthly check-ins to
 ## Reporting
 
 Monthly P&L is reviewed by ownership. Quarterly financial summary is presented at [[Quarterly Business Review]] alongside [[Revenue Streams]] performance and [[Growth Roadmap]] investment tracking.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** The operational architecture of Bloom & Brew reveals a hybrid enterprise— Pixel Bloom Studios manifesting physical-digital synergy through a combined coffee and floral storefront—demanding rigorous fiscal discipline where labor (38%) and inventory (38% combined COGS) consume the vast majority of capital.
+* **Operational Context:** When fiscal matters or upcoming capital expenditures arise, I shall proactively cross-reference pending expenses against the strict $200 threshold, monitor the quarterly cycle, and assist Thenuja in balancing projected ad spends with actual monthly P&L performance.
+* **Cross-Domain Links:** This financial blueprint intricately bridges

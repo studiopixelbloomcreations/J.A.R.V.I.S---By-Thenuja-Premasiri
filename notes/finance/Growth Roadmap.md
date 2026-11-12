@@ -47,3 +47,10 @@ All tracked in [[Quarterly Business Review]]:
 ## Investment Needed
 
 Detailed in [[Budget Planning]]. Total Phase 1-2 investment: ~$45,000, funded from operations and a small business line of credit.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This roadmap outlines the strategic scaling of Bloom & Brew (under the Pixel Bloom Studios umbrella), balancing a 40% revenue growth target over 18 months with the preservation of its boutique community ethos. It marks a critical transition from local café-florist to a diversified enterprise encompassing e-commerce, corporate gifting, and physical expansion.
+* **Operational Context:** When financial planning, operational bottlenecks, or growth milestones are queried, I will proactively cross-reference capital allocation ($45,000 total for Phases 1-2), inventory thresholds, and digital marketing KPIs to ensure Thenuja remains on track without compromising operational bandwidth.
+* **Cross-Domain Links:** This document bridges **Finance** (capital allocation, budget planning, ROI metrics), **Operations** (inventory, shift scheduling, facilities), **Marketing** (social media, email list growth, loyalty retention), and **Products** (DIY kits, corporate gifting, wholesale coffee), requiring synchronized oversight across all sectors of the database.

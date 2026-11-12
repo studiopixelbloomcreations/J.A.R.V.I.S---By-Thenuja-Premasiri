@@ -44,3 +44,10 @@ Maya and Jordan maintain an open door policy. Any [[Team Roster]] member can sch
 ## Future Plans
 
 As we grow per the [[Growth Roadmap]], we plan to add dental insurance and increase the wellness stipend. This is tracked in [[Budget Planning]] as a future line item.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** For Thenuja, the "Bloom & Brew" Employee Wellness Program transcends standard HR policy, serving as a foundational cultural blueprint that marries human capital investment with operational resilience—crucial for sustaining service excellence without burning out the talent pipeline.
+* **Operational Context:** When this topic arises, J.A.R.V.I.S. will maintain strict alignment with Bloom & Brew’s cultural standards, dynamically cross-referencing scheduling conflicts, financial constraints, and strategic milestones to ensure that operational demands never inadvertently compromise team welfare or trigger preventable attrition.
+* **Cross-Domain Links:** This policy bridges multiple sectors within the database, tying directly into **Finance** via *Budget Planning* stipends, **Operations** through *Shift Scheduling* and *Training and Onboarding*, and overarching strategic vectors like the *Growth Roadmap* and *Quarterly Business Review*.

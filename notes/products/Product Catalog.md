@@ -74,3 +74,10 @@ For [[Facilities Maintenance]] reference:
 - Mazzer Mini grinder (x2)
 - Curtis batch brewer
 - Walk-in floral cooler (5x8 ft)
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This catalog codifies the dual-pillar identity of *Bloom & Brew*—the physical manifestation of Thenuja Premasiri's enterprise, seamlessly blending artisanal coffee culture with high-end botanical artistry.
+* **Operational Context:** When managing inquiries, inventory checks, or customer experience strategies regarding this catalog, I shall prioritize margin targets, cross-sell opportunities between coffee and floral lines, and seasonal agility.
+* **Cross-Domain Links:** The product data directly interfaces with **Finance** (via *Revenue Streams* and *Pricing Strategy*), **Marketing** (via *Seasonal Campaigns* and *Brand Guidelines*), and **Operations** (via *Facilities Maintenance* and equipment specifications).

@@ -37,3 +37,10 @@ Bloom & Brew's brand identity reflects the intersection of artisan coffee cultur
 These guidelines apply across [[Social Media Strategy]], [[Email Marketing]], our [[Product Catalog]] photography, and physical signage. All [[Seasonal Campaigns]] materials must be reviewed for brand compliance.
 
 The [[Partnership Opportunities]] document includes co-branding requirements for collaborations.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** These guidelines establish the foundational aesthetic and philosophical DNA for *Bloom & Brew* (under Pixel Bloom Studios), bridging artisan craftsmanship with botanical elegance to ensure Thenuja's commercial ventures project a cohesive, luxury-organic identity without sliding into pretension.
+* **Operational Context:** When assisting with copywriting, campaign drafting, or design critiques, I shall rigorously enforce this lexicon—substituting "shop" with "studio," maintaining the warm, welcoming first-person plural ("we"), and ensuring color hex codes and typography pairing (Playfair Display and Inter) align with brand protocol.
+* **Cross-Domain Links:** This marketing asset directly dictates visual and textual standards across *Operations* (physical signage), *Products* (catalog photography and seasonal campaigns), and *Partnerships* (co-branding compliance), while indirectly influencing *Finance* through the consistent execution of premium positioning.

@@ -347,6 +347,22 @@
     .cam-btn.fit {
       color: var(--cyan);
     }
+    .cam-btn.learn-btn {
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.12);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+      animation: pulse-glow-learn 3s infinite;
+    }
+    .cam-btn.learn-btn:hover, .cam-btn.learn-btn.active {
+      background: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.55);
+    }
+    @keyframes pulse-glow-learn {
+      0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); }
+      50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.5); }
+    }
 
     /* ═══════════════════════════════════════════════════════════════
        4. TOP RIGHT FILTER LEGEND
@@ -996,11 +1012,14 @@
     <button class="cam-btn fit" onclick="fitGraphView()">
       <span>⟲</span> Fit
     </button>
-    <button class="cam-btn" onclick="rotateCamera(0.01)">
+    <button class="cam-btn" id="btn-toggle-orbit" onclick="toggleContinuousOrbit()">
       <span>↻</span> Orbit
     </button>
     <button class="cam-btn" onclick="resetToTopView()">
       <span>↑</span> Top View
+    </button>
+    <button class="cam-btn learn-btn" id="btn-learn-database" onclick="triggerDeepLearningScan()" title="Deep scan database, expand notes with AI understanding, and evolve neural galaxy">
+      <span>✦</span> LEARN
     </button>
   </div>
 
@@ -1240,7 +1259,7 @@
       startSpeechListening();
     });
 
-    // ── 2. Three.js ForceGraph3D Setup (Expanded Galaxy & Attached Note Labels) ──
+    // ── 2. Three.js ForceGraph3D Setup (Cohesive Celestial Nebula Orbit) ──
     let Graph = null;
     function initThreeForceGraph() {
       if (typeof GRAPH === 'undefined' || !GRAPH.nodes) return;
@@ -1259,7 +1278,7 @@
           if (!T) return;
           const group = new T.Group();
           const isHub = node.is_hub;
-          const radius = isHub ? 14 : 5.5;
+          const radius = isHub ? 9.5 : 4.0;
           const colorHex = getGroupColor(node.group);
 
           // 1. Central Glowing Orb Sphere
@@ -1267,14 +1286,14 @@
           const sphereMat = new T.MeshLambertMaterial({
             color: colorHex,
             transparent: true,
-            opacity: isHub ? 0.95 : 0.85
+            opacity: isHub ? 0.95 : 0.88
           });
           const sphereMesh = new T.Mesh(sphereGeo, sphereMat);
           group.add(sphereMesh);
 
           // If main folder hub orb, add an outer holographic aura ring
           if (isHub) {
-            const auraGeo = new T.SphereGeometry(radius + 4, 12, 12);
+            const auraGeo = new T.SphereGeometry(radius + 3.5, 12, 12);
             const auraMat = new T.MeshBasicMaterial({
               color: colorHex,
               wireframe: true,
@@ -1286,27 +1305,27 @@
 
           // 2. High-resolution Attached Note Name Label (Always Visible & Faces Camera)
           const canvas = document.createElement('canvas');
-          canvas.width = 384;
-          canvas.height = 72;
+          canvas.width = 320;
+          canvas.height = 64;
           const ctx = canvas.getContext('2d');
 
           const cleanLabel = isHub ? node.label.replace('📁 ', '').toUpperCase() : node.label;
-          ctx.font = isHub ? 'bold 26px Inter, sans-serif' : '20px Inter, sans-serif';
+          ctx.font = isHub ? 'bold 22px Inter, sans-serif' : '18px Inter, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
           const textWidth = ctx.measureText(cleanLabel).width;
-          const pillW = Math.min(360, textWidth + 24);
-          const pillH = isHub ? 38 : 30;
-          const pillX = 192 - pillW / 2;
-          const pillY = 36 - pillH / 2;
+          const pillW = Math.min(300, textWidth + 20);
+          const pillH = isHub ? 32 : 26;
+          const pillX = 160 - pillW / 2;
+          const pillY = 32 - pillH / 2;
 
-          ctx.fillStyle = isHub ? 'rgba(8, 14, 28, 0.9)' : 'rgba(5, 8, 18, 0.78)';
+          ctx.fillStyle = isHub ? 'rgba(8, 14, 28, 0.92)' : 'rgba(5, 8, 18, 0.82)';
           ctx.strokeStyle = colorHex;
-          ctx.lineWidth = isHub ? 2.2 : 1;
+          ctx.lineWidth = isHub ? 2.0 : 1.2;
           ctx.beginPath();
           if (ctx.roundRect) {
-            ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+            ctx.roundRect(pillX, pillY, pillW, pillH, 6);
           } else {
             ctx.rect(pillX, pillY, pillW, pillH);
           }
@@ -1314,44 +1333,44 @@
           ctx.stroke();
 
           ctx.fillStyle = isHub ? '#00ffff' : '#f8fafc';
-          ctx.fillText(cleanLabel, 192, 37);
+          ctx.fillText(cleanLabel, 160, 32);
 
           const texture = new T.CanvasTexture(canvas);
           texture.minFilter = T.LinearFilter;
           const spriteMat = new T.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
           const sprite = new T.Sprite(spriteMat);
-          const sW = isHub ? 52 : 36;
-          const sH = isHub ? 10 : 7;
+          const sW = isHub ? 34 : 22;
+          const sH = isHub ? 7 : 4.5;
           sprite.scale.set(sW, sH, 1);
-          sprite.position.set(0, radius + (isHub ? 13 : 9), 0);
+          sprite.position.set(0, radius + (isHub ? 8 : 5.5), 0);
           group.add(sprite);
 
           return group;
         })
         .linkColor(link => link.type === 'backbone' ? 'rgba(0, 229, 255, 0.35)' : (link.type === 'spoke' ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.05)'))
-        .linkWidth(link => link.type === 'backbone' ? 2.5 : (link.type === 'spoke' ? 1.4 : 0.8))
-        .linkDirectionalParticles(link => link.type === 'backbone' ? 4 : (link.type === 'spoke' ? 2 : 0))
-        .linkDirectionalParticleSpeed(0.004)
+        .linkWidth(link => link.type === 'backbone' ? 2.0 : (link.type === 'spoke' ? 1.0 : 0.6))
+        .linkDirectionalParticles(link => link.type === 'backbone' ? 3 : (link.type === 'spoke' ? 1 : 0))
+        .linkDirectionalParticleSpeed(0.003)
         .onNodeClick(node => focusOnNode(node));
 
-      // Configure d3-force-3d simulation for vast expanded galaxy
-      Graph.d3Force('charge').strength(-450);
+      // Configure d3-force-3d simulation for cohesive celestial nebula
+      Graph.d3Force('charge').strength(-85);
       Graph.d3Force('link').distance(link => {
-        if (link.type === 'backbone') return 1000; // Backbone pushes folder hubs far apart!
-        if (link.type === 'spoke') return 80;      // Notes cluster around their folder hub
-        return 220;                                // Cross references
+        if (link.type === 'backbone') return 80;   // Cohesive galactic backbone
+        if (link.type === 'spoke') return 30;      // Notes orbit around their folder hub
+        return 50;                                // Cross references
       });
 
-      // Cluster sector gravity pulling nodes to their folder centroids (Personal far from Finance, etc.)
+      // Cluster sector gravity pulling nodes to their folder centroids in balanced space
       const centroids = (typeof GRAPH !== 'undefined' && GRAPH.centroids) ? GRAPH.centroids : {
-        "personal": [-850, 450, -750],
-        "finance": [850, -350, 750],
-        "operations": [-750, -500, 650],
-        "marketing": [750, 600, -550],
-        "products": [800, -500, -650],
-        "team": [-800, 300, 800],
-        "captures": [0, -900, -450],
-        "apex-logistics": [0, 900, 550]
+        "personal": [-110, 60, -70],
+        "finance": [100, -50, 80],
+        "operations": [-90, -70, 65],
+        "marketing": [70, 85, -60],
+        "products": [85, -75, -60],
+        "team": [-80, 45, 90],
+        "captures": [0, -100, -50],
+        "apex-logistics": [0, 100, 50]
       };
 
       const clusterSectorForce = () => {
@@ -1359,7 +1378,7 @@
         for (const n of GRAPH.nodes) {
           const c = centroids[n.group];
           if (c) {
-            const pull = n.is_hub ? 0.06 : 0.03;
+            const pull = n.is_hub ? 0.025 : 0.012;
             n.vx = (n.vx || 0) + (c[0] - n.x) * pull;
             n.vy = (n.vy || 0) + (c[1] - n.y) * pull;
             n.vz = (n.vz || 0) + (c[2] - n.z) * pull;
@@ -1368,15 +1387,15 @@
       };
       Graph.d3Force('cluster_sector', clusterSectorForce);
 
-      // Relax camera distance restrictions for unrestricted zooming
+      // Relax camera distance restrictions for fluid zooming
       const controls = Graph.controls();
       if (controls) {
-        controls.minDistance = 30;
-        controls.maxDistance = 5000;
+        controls.minDistance = 20;
+        controls.maxDistance = 1500;
       }
 
-      // Initial camera positioning to view the vast expanded galaxy
-      Graph.cameraPosition({ x: 0, y: 700, z: 1800 }, { x: 0, y: 0, z: 0 }, 1000);
+      // Initial camera positioning framing the entire galaxy cloud
+      Graph.cameraPosition({ x: 0, y: 70, z: 270 }, { x: 0, y: 0, z: 0 }, 1000);
     }
 
     // ── 3. Node Focusing & Inspection ──
@@ -1477,11 +1496,11 @@
     }
 
     function fitGraphView() {
-      if (Graph) Graph.zoomToFit(1200, 100);
+      if (Graph) Graph.zoomToFit(1000, 60);
     }
 
     function resetToTopView() {
-      if (Graph) Graph.cameraPosition({ x: 0, y: 700, z: 0 }, { x: 0, y: 0, z: 0 }, 1400);
+      if (Graph) Graph.cameraPosition({ x: 0, y: 290, z: 0 }, { x: 0, y: 0, z: 0 }, 1200);
     }
 
     function rotateCamera(delta) {
@@ -1490,6 +1509,82 @@
       const r = Math.hypot(cp.x, cp.z);
       const angle = Math.atan2(cp.z, cp.x) + delta;
       Graph.cameraPosition({ x: r * Math.cos(angle), y: cp.y, z: r * Math.sin(angle) }, { x: 0, y: 0, z: 0 }, 300);
+    }
+
+    // ── Continuous 3D Galaxy Orbit Mode ──
+    let isOrbiting = false;
+    let orbitAnimId = null;
+    let orbitAngle = 0;
+
+    function toggleContinuousOrbit() {
+      isOrbiting = !isOrbiting;
+      const btn = document.getElementById('btn-toggle-orbit');
+      if (btn) btn.classList.toggle('active', isOrbiting);
+
+      if (isOrbiting) {
+        function stepOrbit() {
+          if (!isOrbiting || !Graph) return;
+          orbitAngle += 0.0035;
+          const cp = Graph.cameraPosition();
+          const r = Math.hypot(cp.x, cp.z) || 270;
+          Graph.cameraPosition({
+            x: r * Math.sin(orbitAngle),
+            y: cp.y,
+            z: r * Math.cos(orbitAngle)
+          }, { x: 0, y: 0, z: 0 }, 50);
+          orbitAnimId = requestAnimationFrame(stepOrbit);
+        }
+        orbitAnimId = requestAnimationFrame(stepOrbit);
+      } else {
+        if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
+      }
+    }
+
+    // ── Deep Knowledge Learning & Live Galaxy Expansion ──
+    async function triggerDeepLearningScan() {
+      const btn = document.getElementById('btn-learn-database');
+      if (btn) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span>⏳</span> LEARNING...';
+      }
+      if (orbInstance) orbInstance.setState('thinking', 'LEARNING');
+      updateLiveTranscriptBubble('✦ Scanning complete notes database... Generating deep neural synthesis & expanding knowledge orbs.');
+
+      try {
+        const res = await fetch('/learn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force: false })
+        });
+        const data = await res.json();
+
+        if (data.graph) {
+          // Dynamic live reload of the 3D galaxy without reloading page
+          GRAPH = data.graph;
+          if (Graph) {
+            Graph.graphData(GRAPH);
+            setTimeout(() => {
+              Graph.zoomToFit(1000, 50);
+            }, 600);
+          }
+          buildHubsList();
+          buildFilterLegend();
+          document.getElementById('graph-stats-text').innerText =
+            `${GRAPH.nodes.length} notes · ${GRAPH.links.length} connections`;
+        }
+
+        const answer = `Knowledge database successfully absorbed and synthesized, sir! I have enriched ${data.learned_notes_count} notes with expanded AI understanding. The neural galaxy now hosts ${data.total_nodes} nodes and ${data.total_links} connections.`;
+        showResponseCard({ answer: answer, nodes: [] });
+        updateLiveTranscriptBubble(`✦ ${answer}`);
+        await speakText("Database synthesis complete, sir. I have absorbed and expanded all personal context, and your neural galaxy has evolved with new nodes.");
+      } catch (err) {
+        showResponseCard({ answer: `Learning synthesis encountered an error, sir: ${err.message}`, nodes: [] });
+      } finally {
+        if (btn) {
+          btn.classList.remove('active');
+          btn.innerHTML = '<span>✦</span> LEARN';
+        }
+      }
     }
 
     function toggleDimensionMode() {
@@ -2031,6 +2126,21 @@
         // Check if server dispatched brain switch
         if (data.switch_brain) {
           setBrainMode(data.switch_brain);
+        }
+
+        // Live update neural galaxy if graph was expanded/learned
+        if (data.graph_updated && data.graph) {
+          GRAPH = data.graph;
+          if (Graph) {
+            Graph.graphData(GRAPH);
+            setTimeout(() => {
+              Graph.zoomToFit(1000, 50);
+            }, 600);
+          }
+          buildHubsList();
+          buildFilterLegend();
+          document.getElementById('graph-stats-text').innerText =
+            `${GRAPH.nodes.length} notes · ${GRAPH.links.length} connections`;
         }
 
         // Always show response card if vision capture was performed or in gemini-3.5

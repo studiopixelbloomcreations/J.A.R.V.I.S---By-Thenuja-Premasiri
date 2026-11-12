@@ -37,3 +37,10 @@ Strong supplier relationships are a competitive advantage for Bloom & Brew. We p
 ## Backup Suppliers
 
 We maintain backup relationships for every critical category. Supply chain disruptions during previous years taught us this lesson. Details in [[Inventory Management]].
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** For Thenuja, supply chain integrity at *Bloom & Brew* is not merely an operational necessity, but the foundational pillar of the brand's ethical promise. The meticulous curation of local, sustainable, and direct-trade partners—from Altitude Roasters to Meadowbrook Farms—signifies a deliberate translation of personal values into a resilient, high-margin commercial ecosystem.
+* **Operational Context:** When supplier management, logistics, or delivery schedules are invoked, I shall proactively cross-reference inventory thresholds, flag payment terms (such as Altitude Roasters' Net 30), and optimize early-morning staff allocations—ensuring uninterrupted service for critical pre-dawn deliveries like those from Valley Bloom Wholesale.
+* **Cross-Domain Links:** This protocol directly bridges **Operations** (Inventory Management, Shift Scheduling) with **Finance** (Pricing Strategy margins, QBR evaluations), **Marketing** (Brand Guidelines commitments, Social Media supplier spotlights), and foundational business strategy, requiring a holistic approach whenever any related node is queried.

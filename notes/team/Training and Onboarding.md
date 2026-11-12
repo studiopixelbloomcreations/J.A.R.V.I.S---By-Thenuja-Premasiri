@@ -45,3 +45,10 @@ All training materials are stored in our shared Drive. The [[Tech Stack and Tool
 ## Knowledge Sharing
 
 We encourage the team to share tips in our group chat and during [[Daily Standup Process]]. Sarah and Aisha run monthly "teach me something" sessions where they share advanced techniques with the team.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This protocol governs the intricate human infrastructure of *Bloom & Brew*, translating Thenuja's dual-concept vision (café and floral studio) into a structured, four-week crucible that bridges the gap between chaotic multitasking and seamless operational elegance.
+* **Operational Context:** When human resources, staffing, or procedural queries arise, I shall cross-reference these timelines to evaluate team readiness, cross-training velocities, and upcoming 30-day milestones, ensuring no onboarding detail falls between the cracks of espresso grounds and petals.
+* **Cross-Domain Links:** The training architecture directly interfaces with *Operations* (Facilities, Inventory, Scheduling), *Finance* (Budget Planning for SCA certifications and tools), *Products* (Catalog and Seasonal Campaigns integration), and *Team* dynamics (Roster, Standups, and Sarah/Aisha's mentorship sessions).

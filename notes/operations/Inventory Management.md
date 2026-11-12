@@ -27,3 +27,10 @@ Full inventory counts happen every Sunday evening after close. The [[Shift Sched
 ## Integration with Sales
 
 Our [[Revenue Streams]] analysis shows that inventory turns directly impact margin. The [[Pricing Strategy]] document outlines our markup targets per category.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** For Pixel Bloom Studios' hybrid storefront, *Bloom & Brew*, inventory management is not merely a logistical ledger, but a high-stakes calculus of perishability—where the razor-thin margins of fresh botanicals and specialty roasts demand absolute operational precision to prevent fiscal erosion.
+* **Operational Context:** When inventory metrics, waste thresholds, or reorder schedules are queried, I shall synthesize real-time data from your tech stack with strict adherence to temperature thresholds, spoilage caps (<8%), and minimum stock parameters to preemptively flag supply chain vulnerabilities.
+* **Cross-Domain Links:** This operation intersects intimately with **Finance** (impacting margin analysis and QBR discrepancy reporting), **Facilities** (dictating daily thermal calibration), and **Human Resources** (coordinating Sunday evening dual-operator counts via shift scheduling).

@@ -62,3 +62,10 @@ Bloom & Brew is a team of 9 passionate people who share a love for craft, commun
 ## Hiring Plans
 
 We plan to add one full-time barista and one part-time events coordinator by Q2 next year (see [[Growth Roadmap]] and [[Budget Planning]]).
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This roster represents the human infrastructure of Bloom & Brew—Thenuja's enterprise bridging artisanal craft and commercial hospitality—where leadership and cross-functional talent (such as cross-trained baristas and floral designers) directly dictate brand equity and customer experience.
+* **Operational Context:** When queries intersect with human resources, scheduling, or personnel workflows, I shall cross-reference this directory to streamline management, anticipate operational bottlenecks, and calibrate communications according to each team member's specific domain and authority level (e.g., keyholders versus part-time staff).
+* **Cross-Domain Links:** This document serves as a critical nexus connecting **Operations** (via shift scheduling and inventory management), **Marketing** (through Emma Larsson's campaign execution and David Okonkwo'

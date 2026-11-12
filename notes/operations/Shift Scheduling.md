@@ -28,3 +28,10 @@ All PTO requests go through the process outlined in the [[Employee Wellness Prog
 ## Coverage
 
 If someone calls out, the shift lead follows the call tree in the [[Team Roster]] document. Cross-trained staff from [[Training and Onboarding]] are our first backup option.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** This note governs the delicate operational choreography of *Bloom & Brew*, where Pixel Bloom Studios' commercial physical footprint intersects with human capital management—balancing the distinct artisan skill sets of coffee and floral design through strategic cross-training and rigid scheduling protocols.
+* **Operational Context:** When shift management, staffing deficits, or scheduling inquiries arise, I shall proactively cross-reference the *Team Roster* for keyholders and call-tree protocols, prioritize cross-trained personnel for emergency coverage, and maintain acute awareness of publishing deadlines (Thursdays) and swap-request lead times (48 hours).
+* **Cross-Domain Links:** This document bridges multiple sectors within the database: **Operations** (*Team Roster*, *Training and Onboarding*), **Finance & Budgeting** (*Budget Planning* for software acquisition), **Marketing & Strategy** (*Seasonal Campaigns* for peak-season staffing surges), and **Human Resources** (*Employee Wellness Program* for PTO governance).

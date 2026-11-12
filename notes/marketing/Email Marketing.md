@@ -37,3 +37,10 @@ Monthly email performance is reviewed in the [[Quarterly Business Review]]. We A
 ## Tech
 
 We use Mailchimp (free tier currently sufficient). This is tracked in [[Tech Stack and Tools]] and the [[Budget Planning]] includes a potential upgrade to paid tier.
+
+---
+
+## 🧠 J.A.R.V.I.S. Expanded Understanding & Neural Synthesis
+* **Core Semantic Insight:** At Bloom & Brew, email marketing operates with exceptional efficiency, boasting a 42% open rate that underscores a deeply engaged, loyal customer base and validates the synergy between the botanical and coffee offerings.
+* **Operational Context:** When this topic arises, I shall assist Thenuja by optimizing campaign schedules, drafting A/B test subject lines, and monitoring list segmentation thresholds to ensure Mailchimp's free tier limits are managed proactively before a paid upgrade is triggered.
+* **Cross-Domain Links:** This sector bridges *Marketing* with *Finance* (budgeting for platform upgrades), *Operations* (workshop attendance and supplier features), and *Products* (cross-referencing the [[Loyalty Program]] and [[Seasonal Campaigns]]).
