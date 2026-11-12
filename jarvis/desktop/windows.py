@@ -174,6 +174,148 @@ def move_resize_window(identifier, x, y, width, height):
     return {"status": "success", "action": "move_resize", "hwnd": hwnd, "x": x, "y": y, "width": width, "height": height}
 
 
+def get_screen_geometry():
+    """Returns primary monitor and virtual desktop screen dimensions."""
+    SM_CXSCREEN = 0
+    SM_CYSCREEN = 1
+    SM_XVIRTUALSCREEN = 76
+    SM_YVIRTUALSCREEN = 77
+    SM_CXVIRTUALSCREEN = 78
+    SM_CYVIRTUALSCREEN = 79
+
+    primary_w = user32.GetSystemMetrics(SM_CXSCREEN)
+    primary_h = user32.GetSystemMetrics(SM_CYSCREEN)
+    vx = user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
+    vy = user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
+    vw = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
+    vh = user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+
+    return {
+        "primary": {"width": primary_w, "height": primary_h},
+        "virtual": {"x": vx, "y": vy, "width": vw or primary_w, "height": vh or primary_h}
+    }
+
+
+def snap_window(identifier, position="left"):
+    """
+    Snaps window to screen sectors: 'left', 'right', 'top', 'bottom',
+    'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'.
+    """
+    hwnd = find_window(identifier)
+    if not hwnd:
+        return {"status": "error", "message": f"Window not found: {identifier}"}
+
+    geo = get_screen_geometry()
+    sw = geo["primary"]["width"]
+    sh = geo["primary"]["height"]
+    # Account for standard taskbar height ~40px
+    work_h = max(100, sh - 40)
+
+    pos = position.lower().strip()
+    x, y, w, h = 0, 0, sw // 2, work_h
+
+    if pos in ("left", "split_left"):
+        x, y, w, h = 0, 0, sw // 2, work_h
+    elif pos in ("right", "split_right"):
+        x, y, w, h = sw // 2, 0, sw // 2, work_h
+    elif pos in ("top", "split_top"):
+        x, y, w, h = 0, 0, sw, work_h // 2
+    elif pos in ("bottom", "split_bottom"):
+        x, y, w, h = 0, work_h // 2, sw, work_h // 2
+    elif pos in ("top-left", "top_left"):
+        x, y, w, h = 0, 0, sw // 2, work_h // 2
+    elif pos in ("top-right", "top_right"):
+        x, y, w, h = sw // 2, 0, sw // 2, work_h // 2
+    elif pos in ("bottom-left", "bottom_left"):
+        x, y, w, h = 0, work_h // 2, sw // 2, work_h // 2
+    elif pos in ("bottom-right", "bottom_right"):
+        x, y, w, h = sw // 2, work_h // 2, sw // 2, work_h // 2
+    elif pos == "center":
+        w, h = int(sw * 0.7), int(work_h * 0.75)
+        x, y = (sw - w) // 2, (work_h - h) // 2
+    else:
+        # Default left
+        x, y, w, h = 0, 0, sw // 2, work_h
+
+    return move_resize_window(hwnd, x, y, w, h)
+
+
+def tile_windows(identifiers, layout="split_horizontal"):
+    """
+    Tiles multiple windows into side-by-side or stacked grid layouts.
+    Supported layouts: 'split_horizontal' (columns), 'split_vertical' (rows), 'grid_2x2'.
+    """
+    hwnds = [find_window(i) for i in identifiers]
+    hwnds = [h for h in hwnds if h]
+    if not hwnds:
+        return {"status": "error", "message": "No valid windows found to tile"}
+
+    geo = get_screen_geometry()
+    sw = geo["primary"]["width"]
+    work_h = max(100, geo["primary"]["height"] - 40)
+    n = len(hwnds)
+    results = []
+
+    if layout == "split_vertical":
+        h_per_window = work_h // n
+        for idx, h in enumerate(hwnds):
+            res = move_resize_window(h, 0, idx * h_per_window, sw, h_per_window)
+            results.append(res)
+    elif layout == "grid_2x2" and n >= 4:
+        cols, rows = 2, 2
+        w_cell, h_cell = sw // cols, work_h // rows
+        for idx, h in enumerate(hwnds[:4]):
+            c = idx % 2
+            r = idx // 2
+            res = move_resize_window(h, c * w_cell, r * h_cell, w_cell, h_cell)
+            results.append(res)
+    else:
+        # Default split_horizontal (side-by-side columns)
+        w_per_window = sw // n
+        for idx, h in enumerate(hwnds):
+            res = move_resize_window(h, idx * w_per_window, 0, w_per_window, work_h)
+            results.append(res)
+
+    return {"status": "success", "layout": layout, "tiled_count": len(results), "windows": results}
+
+
+def cascade_windows(identifiers=None):
+    """Cascades open windows with staggered offsets."""
+    if identifiers:
+        hwnds = [find_window(i) for i in identifiers if find_window(i)]
+    else:
+        hwnds = [w["hwnd"] for w in list_windows()[:8]]
+
+    geo = get_screen_geometry()
+    sw = geo["primary"]["width"]
+    sh = geo["primary"]["height"]
+    base_w = int(sw * 0.6)
+    base_h = int(sh * 0.6)
+
+    results = []
+    offset = 32
+    for idx, h in enumerate(hwnds):
+        x = 50 + (idx * offset) % (sw - base_w - 50)
+        y = 50 + (idx * offset) % (sh - base_h - 100)
+        res = move_resize_window(h, x, y, base_w, base_h)
+        user32.SetForegroundWindow(h)
+        results.append(res)
+
+    return {"status": "success", "action": "cascade", "count": len(results)}
+
+
+def is_window_hung(identifier):
+    """Checks if target window is unresponsive (Win32 IsHungAppWindow)."""
+    hwnd = find_window(identifier)
+    if not hwnd:
+        return {"status": "error", "message": f"Window not found: {identifier}"}
+    try:
+        is_hung = bool(user32.IsHungAppWindow(hwnd))
+        return {"status": "success", "hwnd": hwnd, "is_hung": is_hung}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 def launch_application(target, args=None):
     """
     Launches an application by name (e.g. 'notepad', 'calc', 'chrome', 'explorer', 'yt', 'whatsapp', 'spotify')

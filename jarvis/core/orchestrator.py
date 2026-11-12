@@ -37,6 +37,8 @@ class AgentOrchestrator:
             return "diagnostics"
         if "remember that" in q_lower or "remember this" in q_lower or q_lower.startswith("remember"):
             return "remember"
+        if any(kw in q_lower for kw in ["deep research", "recursive research", "literature analysis", "hypotheses", "hypothesis", "verify claim", "check contradiction", "predictive analysis", "decision support", "multi-agent debate", "generate report"]):
+            return "intelligence_reasoning"
         return "knowledge_qa"
 
     def process_request(self, question, session_id=None, active_brain="gemini-3.5", lang="en-GB", is_sinhala=False):
@@ -188,6 +190,82 @@ class AgentOrchestrator:
                 "state": "IDLE",
                 "graph_updated": True,
                 "graph": res.get("graph")
+            }
+
+        # 2c. Intelligence & Reasoning Capabilities (Capabilities 1-15)
+        # Deep Research
+        if re.search(r'\b(?:run\s+)?deep\s+research\b', q_lower):
+            m = re.search(r'\b(?:deep\s+research\s+(?:on|into|about)?\s*)(.+)$', q_lower)
+            topic = m.group(1).strip() if m else question
+            from jarvis.intelligence.engine import intelligence_engine
+            res = intelligence_engine.execute_capability("intel_deep_research", {"query": topic})
+            ans = f"Deep research completed for '{topic}', sir. Analyzed {res['sources_analyzed']} sources, extracted {len(res['key_entities'])} core entities with {res['confidence_score']*100:.1f}% confidence."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": res
+            }
+
+        # Recursive Research
+        if re.search(r'\b(?:run\s+)?recursive\s+research\b', q_lower):
+            m = re.search(r'\b(?:recursive\s+research\s+(?:on|into|about)?\s*)(.+)$', q_lower)
+            topic = m.group(1).strip() if m else question
+            from jarvis.intelligence.engine import intelligence_engine
+            res = intelligence_engine.execute_capability("intel_recursive_research", {"query": topic})
+            ans = f"Recursive frontier research completed for '{topic}', sir. Reached depth {res['max_depth_reached']} across {res['total_nodes_explored']} nodes, discovering {res['total_unique_concepts']} unique concepts."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": res
+            }
+
+        # Autonomous Report Generation
+        if re.search(r'\b(?:generate|build|create)\s+(?:an?\s+)?(?:autonomous\s+|intelligence\s+)?report\b', q_lower):
+            m = re.search(r'\b(?:report\s+(?:on|about|for)?\s*)(.+)$', q_lower)
+            topic = m.group(1).strip() if m else "J.A.R.V.I.S. Core Intelligence"
+            from jarvis.intelligence.engine import intelligence_engine
+            res = intelligence_engine.execute_capability("intel_autonomous_report", {"topic": topic})
+            ans = f"Autonomous intelligence dossier compiled for '{topic}', sir. Report generated at '{res['report_file']}' with 13-block holographic HUD cards."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": res
+            }
+
+        # Hypothesis Generation
+        if re.search(r'\b(?:generate|formulate)\s+hypotheses\b', q_lower):
+            m = re.search(r'\b(?:hypotheses\s+(?:for|on|about)?\s*)(.+)$', q_lower)
+            obs = m.group(1).strip() if m else question
+            from jarvis.intelligence.engine import intelligence_engine
+            res = intelligence_engine.execute_capability("intel_hypothesis_generation", {"observation": obs})
+            ans = f"Formulated {res['hypotheses_count']} competing hypotheses for '{obs}', sir: Null, Primary, Alternative, and Contrarian models."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": res
+            }
+
+        # Multi-Agent Collaboration / Debate
+        if re.search(r'\b(?:multi-?agent\s+(?:debate|collaboration|deliberation)|run\s+agent\s+debate)\b', q_lower):
+            m = re.search(r'\b(?:debate|collaboration|deliberation)\s+(?:on|about|for)?\s*(.+)$', q_lower)
+            topic = m.group(1).strip() if m else question
+            from jarvis.intelligence.engine import intelligence_engine
+            res = intelligence_engine.execute_capability("intel_multi_agent_collab", {"task": topic})
+            ans = f"Multi-agent deliberation completed for '{topic}', sir. Proposer, Critic, Fact-Checker, and Synthesizer achieved consensus ({res['consensus_score']*100:.1f}% agreement): '{res['adopted_solution']}'."
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": res
             }
 
         # 3. WhatsApp Messaging Intent (e.g. "send msg in whatsapp to John saying I'll be late", "send whatsapp message to 0771234567 saying hello", "send message in whatsapp")

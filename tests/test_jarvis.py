@@ -167,11 +167,14 @@ class TestVisionSubsystem(unittest.TestCase):
 
 class TestDesktopAutomation(unittest.TestCase):
     def test_mouse_position_and_movement(self):
+        from jarvis.desktop.emergency import emergency
+        emergency.reset()
         x, y = get_cursor_position()
         self.assertIsInstance(x, int)
         self.assertIsInstance(y, int)
 
-        res = move_cursor(x, y, smooth=False)
+        target_x, target_y = (x, y) if (x > 10 and y > 10) else (200, 200)
+        res = move_cursor(target_x, target_y, smooth=False)
         self.assertEqual(res.get("status"), "success")
 
     def test_window_enumeration(self):

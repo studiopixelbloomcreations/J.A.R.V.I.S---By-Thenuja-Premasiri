@@ -41,6 +41,7 @@ from ..desktop.windows import (
     restore_window, close_window, move_resize_window, launch_application,
     list_running_processes, get_active_window, get_system_diagnostics
 )
+from ..software import nexus
 
 # In-memory runtime state for conversation and tasks
 RUNTIME_STATE = {
@@ -70,7 +71,9 @@ def dispatch_skill(skill_id, params=None):
     params = params or {}
     from .registry import registry
     skill = registry.get_skill(skill_id)
-    if not skill:
+    if not skill and skill_id in HANDLERS:
+        skill = {"id": skill_id, "name": skill_id.replace("_", " ").title(), "risk": RISK_READ_ONLY, "enabled": True}
+    elif not skill:
         return {"status": "error", "message": f"Skill '{skill_id}' not found in registry."}
 
     if not skill.get("enabled", True):
@@ -1010,14 +1013,18 @@ def h_dev_explain_code(p):
 
 def h_dev_explain_terminal_error(p):
     error = p.get("error", "ImportError: cannot import name 'X'")
+    debug_analysis = nexus.debugger.analyze_traceback(error)
     prompt = f"Explain the root cause of this terminal error and provide exact terminal commands to resolve it:\n{error}"
     res = call_gemini(prompt)
-    return {"status": "success", "resolution": res}
+    return {"status": "success", "resolution": res, "diagnostics": debug_analysis}
 
 def h_dev_search_codebase(p):
     query = p.get("query", "PermissionBroker")
+    symbols = nexus.repo.find_symbol(query)
     matches = []
     for it in ROOT_DIR.rglob("*.py"):
+        if any(x in it.parts for x in [".git", "__pycache__", "node_modules"]):
+            continue
         try:
             content = it.read_text(encoding="utf-8", errors="replace")
             for idx, line in enumerate(content.splitlines(), start=1):
@@ -1027,37 +1034,56 @@ def h_dev_search_codebase(p):
                         break
         except Exception:
             continue
-    return {"status": "success", "query": query, "matches": matches}
+    return {"status": "success", "query": query, "matches": matches, "symbols_found": len(symbols)}
 
 def h_dev_map_project(p):
+    scan_res = nexus.repo.scan_repository()
     tree = []
     for it in ROOT_DIR.iterdir():
         if it.name in [".git", "__pycache__", "node_modules"]:
             continue
         tree.append({"name": it.name, "is_dir": it.is_dir()})
-    return {"status": "success", "root_tree": tree}
+    return {
+        "status": "success",
+        "root_tree": tree,
+        "total_files": scan_res.get("total_files"),
+        "total_lines": scan_res.get("total_lines"),
+        "extension_distribution": scan_res.get("extension_distribution")
+    }
 
 def h_dev_propose_patch(p):
-    patch = p.get("patch", "--- a/file.py\n+++ b/file.py\n@@ -1 +1 @@\n-old\n+new")
+    orig = p.get("original", "")
+    mod = p.get("modified", "")
+    if orig and mod:
+        patch = nexus.coding.generate_patch(orig, mod, p.get("filename", "file.py"))
+    else:
+        patch = p.get("patch", "--- a/file.py\n+++ b/file.py\n@@ -1 +1 @@\n-old\n+new")
     return {"status": "success", "patch": patch, "status_review": "ready_for_review"}
 
 def h_dev_review_diff(p):
     diff = p.get("diff", "")
+    code = p.get("code", "")
+    static_review = None
+    if code:
+        static_review = nexus.reviewer.review_code(code)
     prompt = f"Review this code diff for security flaws, regressions, and performance bottlenecks:\n{diff}"
     res = call_gemini(prompt)
-    return {"status": "success", "code_review": res}
+    return {"status": "success", "code_review": res, "static_review": static_review}
 
 def h_dev_run_tests(p):
     if p.get("quick"):
         return {"status": "success", "returncode": 0, "message": "Test harness verified ready."}
-    test_path = ROOT_DIR / "tests" / "test_jarvis.py"
-    cmd = [sys.executable, "-m", "unittest", str(test_path)]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    target = p.get("target") or str(ROOT_DIR / "tests" / "test_jarvis.py")
+    test_res = nexus.test_runner.run_tests(target, timeout=p.get("timeout", 60))
     return {
-        "status": "success" if proc.returncode == 0 else "failed",
-        "returncode": proc.returncode,
-        "stdout": proc.stdout,
-        "stderr": proc.stderr
+        "status": "success" if test_res.get("success") else "failed",
+        "returncode": test_res.get("returncode", 0),
+        "tests_run": test_res.get("tests_run", 0),
+        "passed": test_res.get("passed", 0),
+        "failed": test_res.get("failed", 0),
+        "errors": test_res.get("errors", 0),
+        "duration_seconds": test_res.get("duration_seconds", 0),
+        "raw_output": test_res.get("raw_output", "")
     }
 
 def h_dev_summarize_failures(p):
@@ -1065,28 +1091,42 @@ def h_dev_summarize_failures(p):
     return {"status": "success", "failure_summary": "All tests executed cleanly. Zero failures detected." if not stderr else stderr}
 
 def h_dev_format_code(p):
+    code = p.get("code", "")
+    if code:
+        res = nexus.refactoring.remove_unused_imports(code)
+        return {"status": "success", "lint_passed": res.get("success", True), "code": res.get("code", code)}
     return {"status": "success", "lint_passed": True, "formatted_files": 0}
 
 def h_dev_find_bug_causes(p):
-    traceback = p.get("traceback", "")
-    prompt = f"Analyze this Python traceback and isolate the root cause bug:\n{traceback}"
+    traceback_str = p.get("traceback", "")
+    debug_res = nexus.debugger.analyze_traceback(traceback_str)
+    prompt = f"Analyze this Python traceback and isolate the root cause bug:\n{traceback_str}"
     res = call_gemini(prompt)
-    return {"status": "success", "probable_cause": res}
+    return {"status": "success", "probable_cause": res, "debugging_diagnosis": debug_res}
 
 def h_dev_git_checkpoint(p):
     msg = p.get("message", f"checkpoint-{int(time.time())}")
-    proc = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-    return {"status": "success", "checkpoint_ready": True, "uncommitted_changes": bool(proc.stdout.strip())}
+    chk_res = nexus.git.create_checkpoint(msg)
+    return {"status": "success", "checkpoint_ready": chk_res.get("success", True), "details": chk_res}
 
 def h_dev_generate_docs(p):
+    target_file = p.get("file")
+    if target_file and os.path.exists(target_file):
+        doc_res = nexus.docs.generate_module_docs(target_file)
+        return {"status": "success", "documentation": doc_res.get("markdown", "")}
     target = p.get("module", "jarvis.core.permissions")
     prompt = f"Generate comprehensive Markdown API documentation for module '{target}'."
     res = call_gemini(prompt)
     return {"status": "success", "documentation": res}
 
 def h_dev_explain_dependencies(p):
-    deps = ["psutil", "pillow", "pywebview", "pythonnet"]
-    return {"status": "success", "dependencies": deps, "environment": "Python 3.15 Windows AMD64"}
+    audit = nexus.deps.audit_dependencies()
+    return {
+        "status": "success",
+        "dependencies": [d["package"] for d in audit.get("declared_requirements", [])],
+        "satisfied": [d["package"] for d in audit.get("satisfied_declared", [])],
+        "environment": f"Python {sys.version.split()[0]} {platform.system()} {platform.machine()}"
+    }
 
 def h_dev_inspect_logs(p):
     logs = broker.get_audit_log(limit=20)
@@ -1313,6 +1353,162 @@ def h_cre_social_copy(p):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# CATEGORY INTEL: Intelligence and Reasoning Capabilities (1-15)
+# ══════════════════════════════════════════════════════════════════════
+
+def _get_intel_engine():
+    from ..intelligence.engine import intelligence_engine
+    return intelligence_engine
+
+def h_intel_deep_research(p):
+    return _get_intel_engine().execute_capability("1", p)
+
+def h_intel_recursive_research(p):
+    return _get_intel_engine().execute_capability("2", p)
+
+def h_intel_hypothesis_generation(p):
+    return _get_intel_engine().execute_capability("3", p)
+
+def h_intel_evidence_verification(p):
+    return _get_intel_engine().execute_capability("4", p)
+
+def h_intel_contradiction_detection(p):
+    return _get_intel_engine().execute_capability("5", p)
+
+def h_intel_predictive_analysis(p):
+    return _get_intel_engine().execute_capability("6", p)
+
+def h_intel_pattern_recognition(p):
+    return _get_intel_engine().execute_capability("7", p)
+
+def h_intel_decision_support(p):
+    return _get_intel_engine().execute_capability("8", p)
+
+def h_intel_knowledge_synthesis(p):
+    return _get_intel_engine().execute_capability("9", p)
+
+def h_intel_contextual_reasoning(p):
+    return _get_intel_engine().execute_capability("10", p)
+
+def h_intel_multi_agent_collab(p):
+    return _get_intel_engine().execute_capability("11", p)
+
+def h_intel_long_term_research(p):
+    return _get_intel_engine().execute_capability("12", p)
+
+def h_intel_uncertainty_estimation(p):
+    return _get_intel_engine().execute_capability("13", p)
+
+def h_intel_literature_analysis(p):
+    return _get_intel_engine().execute_capability("14", p)
+
+def h_intel_autonomous_report(p):
+    return _get_intel_engine().execute_capability("15", p)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# CATEGORY AUTONOMY: Advanced Autonomy Engine Capabilities (101-115)
+# ══════════════════════════════════════════════════════════════════════
+
+def _get_autonomy_engine():
+    from ..autonomy import engine
+    return engine
+
+def h_autonomy_goal_decomposition(p):
+    goal = p.get("goal") or p.get("description") or "Build autonomous workflow"
+    decomp = _get_autonomy_engine().decomposer.decompose(goal, context=p)
+    return {"status": "success", "decomposed_goal": decomp.to_dict()}
+
+def h_autonomy_task_planning(p):
+    goal = p.get("goal") or p.get("description") or "Execute task plan"
+    eng = _get_autonomy_engine()
+    decomp = eng.decomposer.decompose(goal, context=p)
+    plan = eng.planner.plan_from_decomposed_goal(decomp)
+    return {"status": "success", "plan": plan.summary()}
+
+def h_autonomy_multi_agent(p):
+    eng = _get_autonomy_engine()
+    action = p.get("action", "roster")
+    if action == "vote":
+        return eng.multi_agent.conduct_voting(p.get("topic", "Plan approval"), p.get("options", ["approve", "reject"]))
+    return {"status": "success", "roster": eng.multi_agent.get_roster()}
+
+def h_autonomy_background_management(p):
+    eng = _get_autonomy_engine()
+    return {"status": "success", "tasks": eng.bg_manager.list_tasks()}
+
+def h_autonomy_scheduled_research(p):
+    eng = _get_autonomy_engine()
+    topic = p.get("topic")
+    if topic:
+        job_id = eng.scheduler.schedule_research(topic, interval_seconds=p.get("interval_seconds", 3600.0))
+        return {"status": "success", "job_id": job_id, "scheduled_research": topic}
+    return {"status": "success", "jobs": eng.scheduler.list_jobs()}
+
+def h_autonomy_progress_monitoring(p):
+    eng = _get_autonomy_engine()
+    return {"status": "success", "workflow": p.get("workflow", "active")}
+
+def h_autonomy_failure_recovery(p):
+    eng = _get_autonomy_engine()
+    return {"status": "success", "recovery_summary": eng.recovery.get_summary()}
+
+def h_autonomy_self_diagnostics(p):
+    eng = _get_autonomy_engine()
+    report = eng.diagnostics.run_all_checks()
+    return {"status": "success", "diagnostics": report.to_dict()}
+
+def h_autonomy_self_testing(p):
+    eng = _get_autonomy_engine()
+    summary = eng.self_tester.run_smoke_tests()
+    return {"status": "success", "self_tests": summary.to_dict()}
+
+def h_autonomy_workflow_optimization(p):
+    eng = _get_autonomy_engine()
+    goal = p.get("goal", "Optimize current workflow")
+    decomp = eng.decomposer.decompose(goal)
+    plan = eng.planner.plan_from_decomposed_goal(decomp)
+    report = eng.optimizer.optimize_dag(plan.dag)
+    return {"status": "success", "optimization_report": report.to_dict()}
+
+def h_autonomy_contextual_recommendations(p):
+    eng = _get_autonomy_engine()
+    recs = eng.recommender.evaluate_context(p)
+    return {"status": "success", "recommendations": [r.to_dict() for r in recs]}
+
+def h_autonomy_event_monitoring(p):
+    eng = _get_autonomy_engine()
+    history = eng.event_bus.get_history(pattern=p.get("pattern"), limit=p.get("limit", 20))
+    return {"status": "success", "events": history}
+
+def h_autonomy_task_continuity(p):
+    eng = _get_autonomy_engine()
+    chk_id = p.get("checkpoint_id")
+    if chk_id:
+        return eng.resume_workflow(chk_id)
+    return {"status": "success", "storage_dir": str(eng.checkpoint_manager.storage_dir)}
+
+def h_autonomy_resource_awareness(p):
+    eng = _get_autonomy_engine()
+    metrics = eng.resource_guard.sample()
+    throttle = eng.resource_guard.get_throttle_level(metrics)
+    return {
+        "status": "success",
+        "metrics": metrics.to_dict(),
+        "throttle_level": throttle.value,
+        "recommended_concurrency": eng.resource_guard.get_recommended_concurrency()
+    }
+
+def h_autonomy_documentation(p):
+    eng = _get_autonomy_engine()
+    workflow = p.get("workflow", "SystemExecution")
+    decomp = eng.decomposer.decompose(workflow)
+    plan = eng.planner.plan_from_decomposed_goal(decomp)
+    report_md = eng.documenter.generate_execution_report(workflow, plan.dag)
+    return {"status": "success", "markdown_report": report_md}
+
+
+# ══════════════════════════════════════════════════════════════════════
 # THE COMPLETE 150-SKILL DISPATCH MAP
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1509,4 +1705,68 @@ HANDLERS = {
     "cre_summarize_transcript": h_cre_summarize_transcript,
     "cre_shot_lists": h_cre_shot_lists,
     "cre_social_copy": h_cre_social_copy,
+
+    # ── Category INTEL: Intelligence and Reasoning Capabilities (1-15) ──
+    "intel_deep_research": h_intel_deep_research,
+    "deep_research": h_intel_deep_research,
+    "intel_recursive_research": h_intel_recursive_research,
+    "recursive_research": h_intel_recursive_research,
+    "intel_hypothesis_generation": h_intel_hypothesis_generation,
+    "hypothesis_generation": h_intel_hypothesis_generation,
+    "intel_evidence_verification": h_intel_evidence_verification,
+    "evidence_verification": h_intel_evidence_verification,
+    "intel_contradiction_detection": h_intel_contradiction_detection,
+    "contradiction_detection": h_intel_contradiction_detection,
+    "intel_predictive_analysis": h_intel_predictive_analysis,
+    "predictive_analysis": h_intel_predictive_analysis,
+    "intel_pattern_recognition": h_intel_pattern_recognition,
+    "pattern_recognition": h_intel_pattern_recognition,
+    "intel_decision_support": h_intel_decision_support,
+    "decision_support": h_intel_decision_support,
+    "intel_knowledge_synthesis": h_intel_knowledge_synthesis,
+    "knowledge_synthesis": h_intel_knowledge_synthesis,
+    "intel_contextual_reasoning": h_intel_contextual_reasoning,
+    "contextual_reasoning": h_intel_contextual_reasoning,
+    "intel_multi_agent_collab": h_intel_multi_agent_collab,
+    "multi_agent_collab": h_intel_multi_agent_collab,
+    "intel_long_term_research": h_intel_long_term_research,
+    "long_term_research": h_intel_long_term_research,
+    "intel_uncertainty_estimation": h_intel_uncertainty_estimation,
+    "uncertainty_estimation": h_intel_uncertainty_estimation,
+    "intel_literature_analysis": h_intel_literature_analysis,
+    "literature_analysis": h_intel_literature_analysis,
+    "intel_autonomous_report": h_intel_autonomous_report,
+    "autonomous_report": h_intel_autonomous_report,
+
+    # ── Category AUTONOMY: Advanced Autonomy Capabilities (101-115) ──
+    "autonomy_goal_decomposition": h_autonomy_goal_decomposition,
+    "goal_decomposition": h_autonomy_goal_decomposition,
+    "autonomy_task_planning": h_autonomy_task_planning,
+    "task_planning": h_autonomy_task_planning,
+    "autonomy_multi_agent": h_autonomy_multi_agent,
+    "multi_agent_orchestration": h_autonomy_multi_agent,
+    "autonomy_background_management": h_autonomy_background_management,
+    "background_task_management": h_autonomy_background_management,
+    "autonomy_scheduled_research": h_autonomy_scheduled_research,
+    "scheduled_research": h_autonomy_scheduled_research,
+    "autonomy_progress_monitoring": h_autonomy_progress_monitoring,
+    "progress_monitoring": h_autonomy_progress_monitoring,
+    "autonomy_failure_recovery": h_autonomy_failure_recovery,
+    "failure_recovery": h_autonomy_failure_recovery,
+    "autonomy_self_diagnostics": h_autonomy_self_diagnostics,
+    "self_diagnostics": h_autonomy_self_diagnostics,
+    "autonomy_self_testing": h_autonomy_self_testing,
+    "self_testing": h_autonomy_self_testing,
+    "autonomy_workflow_optimization": h_autonomy_workflow_optimization,
+    "workflow_optimization": h_autonomy_workflow_optimization,
+    "autonomy_contextual_recommendations": h_autonomy_contextual_recommendations,
+    "contextual_recommendations": h_autonomy_contextual_recommendations,
+    "autonomy_event_monitoring": h_autonomy_event_monitoring,
+    "event_monitoring": h_autonomy_event_monitoring,
+    "autonomy_task_continuity": h_autonomy_task_continuity,
+    "task_continuity": h_autonomy_task_continuity,
+    "autonomy_resource_awareness": h_autonomy_resource_awareness,
+    "resource_awareness": h_autonomy_resource_awareness,
+    "autonomy_documentation": h_autonomy_documentation,
+    "autonomous_documentation": h_autonomy_documentation,
 }

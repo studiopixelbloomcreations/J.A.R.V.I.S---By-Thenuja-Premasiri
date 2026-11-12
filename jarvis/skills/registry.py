@@ -202,6 +202,25 @@ SKILL_DEFINITIONS = [
     {"num": 150, "id": "cre_social_copy", "cat": "J", "name": "Prepare Social Captions & Briefs", "risk": RISK_READ_ONLY, "desc": "Drafts brand-consistent marketing copy and design briefs."},
 ]
 
+# ── Intelligence and Reasoning Capabilities (Capabilities 1-15) ──
+INTELLIGENCE_CAPABILITY_DEFINITIONS = [
+    {"num": 1, "id": "intel_deep_research", "cat": "INTEL", "name": "Deep Research Engine", "risk": RISK_READ_ONLY, "desc": "Capability 1: Multi-source research gathering, vector decomposition, and entity synthesis."},
+    {"num": 2, "id": "intel_recursive_research", "cat": "INTEL", "name": "Recursive Research", "risk": RISK_READ_ONLY, "desc": "Capability 2: Iterative frontier tree expansion with redundancy pruning and convergence."},
+    {"num": 3, "id": "intel_hypothesis_generation", "cat": "INTEL", "name": "Hypothesis Generation", "risk": RISK_READ_ONLY, "desc": "Capability 3: Formulates competing Null, Primary, Alternative, and Edge hypotheses."},
+    {"num": 4, "id": "intel_evidence_verification", "cat": "INTEL", "name": "Evidence Verification", "risk": RISK_READ_ONLY, "desc": "Capability 4: Evaluates claims against source evidence, calculates credibility and hallucination risk."},
+    {"num": 5, "id": "intel_contradiction_detection", "cat": "INTEL", "name": "Contradiction Detection", "risk": RISK_READ_ONLY, "desc": "Capability 5: Detects direct negation, quantitative mismatches, and temporal inconsistencies."},
+    {"num": 6, "id": "intel_predictive_analysis", "cat": "INTEL", "name": "Predictive Analysis", "risk": RISK_READ_ONLY, "desc": "Capability 6: Time-series trend extrapolation and multi-scenario probability forecasting."},
+    {"num": 7, "id": "intel_pattern_recognition", "cat": "INTEL", "name": "Pattern Recognition", "risk": RISK_READ_ONLY, "desc": "Capability 7: Numerical anomaly detection (z-score/IQR) and text motif extraction."},
+    {"num": 8, "id": "intel_decision_support", "cat": "INTEL", "name": "Decision Support", "risk": RISK_READ_ONLY, "desc": "Capability 8: Multi-criteria decision analysis (MCDA) via weighted scoring and sensitivity analysis."},
+    {"num": 9, "id": "intel_knowledge_synthesis", "cat": "INTEL", "name": "Knowledge Synthesis", "risk": RISK_READ_ONLY, "desc": "Capability 9: Triadic dialectic synthesis (Thesis, Antithesis, Synthesis) and conceptual bridging."},
+    {"num": 10, "id": "intel_contextual_reasoning", "cat": "INTEL", "name": "Contextual Reasoning", "risk": RISK_READ_ONLY, "desc": "Capability 10: Pragmatic inference grounded in user profile, OS environment, and risk posture."},
+    {"num": 11, "id": "intel_multi_agent_collab", "cat": "INTEL", "name": "Multi-Agent Collaboration", "risk": RISK_READ_ONLY, "desc": "Capability 11: Multi-role structured debate protocol with consensus scoring."},
+    {"num": 12, "id": "intel_long_term_research", "cat": "INTEL", "name": "Long-Term Research", "risk": RISK_REVERSIBLE, "desc": "Capability 12: Persistent research agendas, Bayesian hypothesis updates, and snapshot journal."},
+    {"num": 13, "id": "intel_uncertainty_estimation", "cat": "INTEL", "name": "Uncertainty Estimation", "risk": RISK_READ_ONLY, "desc": "Capability 13: Shannon entropy, epistemic vs aleatoric decomposition, and unknown-unknown risk."},
+    {"num": 14, "id": "intel_literature_analysis", "cat": "INTEL", "name": "Scientific Literature Analysis", "risk": RISK_READ_ONLY, "desc": "Capability 14: Extracts study design, sample size (N), p-values/CIs, rigor scorecard, and bias risk."},
+    {"num": 15, "id": "intel_autonomous_report", "cat": "INTEL", "name": "Autonomous Report Generation", "risk": RISK_REVERSIBLE, "desc": "Capability 15: Compiles publication-ready Markdown briefings and 13-block holographic HUD decks."},
+]
+
 
 class SkillRegistry:
     def __init__(self):
@@ -214,26 +233,59 @@ class SkillRegistry:
             self.skills[sid]["enabled"] = True
             self.enabled_state[sid] = True
 
-    def get_all(self):
-        return list(self.skills.values())
+        self.intelligence_skills = {}
+        for s in INTELLIGENCE_CAPABILITY_DEFINITIONS:
+            sid = s["id"]
+            self.intelligence_skills[sid] = dict(s)
+            self.intelligence_skills[sid]["status"] = STATUS_TESTED
+            self.intelligence_skills[sid]["enabled"] = True
+            self.enabled_state[sid] = True
+
+    def get_all(self, include_intelligence=False):
+        base = list(self.skills.values())
+        if include_intelligence:
+            return base + list(self.intelligence_skills.values())
+        return base
+
+    def get_intelligence_skills(self):
+        return list(self.intelligence_skills.values())
 
     def get_skill(self, skill_id):
-        return self.skills.get(skill_id)
+        if skill_id in self.skills:
+            return self.skills[skill_id]
+        if skill_id in self.intelligence_skills:
+            return self.intelligence_skills[skill_id]
+        alias_key = f"intel_{skill_id}"
+        if alias_key in self.intelligence_skills:
+            return self.intelligence_skills[alias_key]
+        return None
 
     def set_enabled(self, skill_id, enabled):
         if skill_id in self.skills:
             self.skills[skill_id]["enabled"] = bool(enabled)
             self.enabled_state[skill_id] = bool(enabled)
             return True
+        if skill_id in self.intelligence_skills:
+            self.intelligence_skills[skill_id]["enabled"] = bool(enabled)
+            self.enabled_state[skill_id] = bool(enabled)
+            return True
+        alias_key = f"intel_{skill_id}"
+        if alias_key in self.intelligence_skills:
+            self.intelligence_skills[alias_key]["enabled"] = bool(enabled)
+            self.enabled_state[alias_key] = bool(enabled)
+            return True
         return False
 
     def get_by_category(self, cat_code):
+        if cat_code == "INTEL":
+            return list(self.intelligence_skills.values())
         return [s for s in self.skills.values() if s["cat"] == cat_code]
 
     def search(self, query):
         q = query.lower().strip()
+        all_skills = list(self.skills.values()) + list(self.intelligence_skills.values())
         return [
-            s for s in self.skills.values()
+            s for s in all_skills
             if q in s["name"].lower() or q in s["desc"].lower() or q in s["id"].lower()
         ]
 
