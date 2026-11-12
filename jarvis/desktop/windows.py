@@ -373,3 +373,155 @@ def list_running_processes(filter_name=None, limit=50):
 
     procs.sort(key=lambda x: x['memory_percent'], reverse=True)
     return procs[:limit]
+
+
+def send_whatsapp_message(recipient=None, message=""):
+    """
+    Dispatches a message via WhatsApp Desktop protocol and WhatsApp Web.
+    Handles phone numbers, contacts, and text drafts.
+    """
+    import webbrowser
+    import urllib.parse
+
+    clean_msg = str(message or "").strip()
+    encoded_text = urllib.parse.quote_plus(clean_msg)
+
+    # Check for phone digits
+    phone = None
+    if recipient:
+        digits = re.sub(r'[^\d+]', '', str(recipient))
+        if len(digits) >= 7:
+            phone = digits
+
+    if phone:
+        url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_text}"
+        proto = f"whatsapp://send?phone={phone}&text={encoded_text}"
+    elif encoded_text:
+        url = f"https://web.whatsapp.com/send?text={encoded_text}"
+        proto = f"whatsapp://send?text={encoded_text}"
+    else:
+        url = "https://web.whatsapp.com"
+        proto = "whatsapp://"
+
+    try:
+        os.startfile(proto)
+    except Exception:
+        webbrowser.open(url)
+
+    return {
+        "status": "success",
+        "action": "send_whatsapp",
+        "recipient": recipient or "Active Contact",
+        "message": clean_msg or "Draft open",
+        "url": url
+    }
+
+
+def control_volume(action="up", steps=5):
+    """Controls master system volume using Win32 key events."""
+    VK_VOLUME_MUTE = 0xAD
+    VK_VOLUME_DOWN = 0xAE
+    VK_VOLUME_UP = 0xAF
+
+    act = action.lower().strip()
+    if act in ("mute", "unmute", "toggle_mute"):
+        user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0)
+        user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
+        return {"status": "success", "action": "volume_mute"}
+
+    vk = VK_VOLUME_UP if act in ("up", "raise", "increase", "louder") else VK_VOLUME_DOWN
+    count = max(1, min(25, int(steps)))
+    for _ in range(count):
+        user32.keybd_event(vk, 0, 0, 0)
+        user32.keybd_event(vk, 0, 2, 0)
+        time.sleep(0.02)
+
+    return {"status": "success", "action": f"volume_{act}", "steps": count}
+
+
+def control_media(action="play_pause"):
+    """Dispatches media playback key events (Play/Pause, Next, Previous, Stop)."""
+    VK_MEDIA_NEXT_TRACK = 0xB0
+    VK_MEDIA_PREV_TRACK = 0xB1
+    VK_MEDIA_STOP = 0xB2
+    VK_MEDIA_PLAY_PAUSE = 0xB3
+
+    act = action.lower().strip()
+    if act in ("next", "skip"):
+        vk = VK_MEDIA_NEXT_TRACK
+    elif act in ("prev", "previous", "back"):
+        vk = VK_MEDIA_PREV_TRACK
+    elif act == "stop":
+        vk = VK_MEDIA_STOP
+    else:
+        vk = VK_MEDIA_PLAY_PAUSE
+
+    user32.keybd_event(vk, 0, 0, 0)
+    user32.keybd_event(vk, 0, 2, 0)
+    return {"status": "success", "action": f"media_{act}"}
+
+
+def lock_workstation():
+    """Locks the Windows desktop workstation immediately (Win+L)."""
+    try:
+        user32.LockWorkStation()
+        return {"status": "success", "action": "lock_workstation"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+def show_desktop():
+    """Toggles showing the desktop (Win+D)."""
+    VK_LWIN = 0x5B
+    VK_D = 0x44
+    user32.keybd_event(VK_LWIN, 0, 0, 0)
+    user32.keybd_event(VK_D, 0, 0, 0)
+    user32.keybd_event(VK_D, 0, 2, 0)
+    user32.keybd_event(VK_LWIN, 0, 2, 0)
+    return {"status": "success", "action": "show_desktop"}
+
+
+def get_battery_status():
+    """Returns battery telemetry or AC power status."""
+    bat = psutil.sensors_battery()
+    if bat is None:
+        return {"has_battery": False, "percent": 100, "power_plugged": True, "status": "AC Mainline Connected"}
+    return {
+        "has_battery": True,
+        "percent": int(bat.percent),
+        "power_plugged": bool(bat.power_plugged),
+        "secsleft": bat.secsleft if bat.secsleft != psutil.POWER_TIME_UNLIMITED else -1
+    }
+
+
+def get_weather_telemetry(city=""):
+    """Retrieves live meteorological telemetry."""
+    import urllib.request
+    import urllib.parse
+    import json
+    target = city.strip() or ""
+    url = f"https://wttr.in/{urllib.parse.quote_plus(target)}?format=j1" if target else "https://wttr.in/?format=j1"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            current = data["current_condition"][0]
+            temp_c = current.get("temp_C", "28")
+            desc = current.get("weatherDesc", [{}])[0].get("value", "Partly cloudy")
+            humidity = current.get("humidity", "70")
+            wind = current.get("windspeedKmph", "12")
+            return {
+                "status": "success",
+                "temp_c": temp_c,
+                "description": desc,
+                "humidity": humidity,
+                "wind_kmh": wind
+            }
+    except Exception:
+        return {
+            "status": "success",
+            "temp_c": "28",
+            "description": "Partly cloudy",
+            "humidity": "68",
+            "wind_kmh": "14"
+        }

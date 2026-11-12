@@ -283,6 +283,38 @@ class TestOrchestrator(unittest.TestCase):
         self.assertEqual(res_main.get("switch_ui"), "main")
         self.assertIn("main console", res_main.get("answer", ""))
 
+    def test_whatsapp_messaging_intent(self):
+        res1 = orchestrator.process_request("send msg in whatsapp to John saying I am running late")
+        self.assertIn("WhatsApp", res1["answer"])
+        self.assertIn("John", res1["answer"])
+        self.assertEqual(res1["state"], "EXECUTING")
+
+        res2 = orchestrator.process_request("send message on whatsapp saying please call me back")
+        self.assertIn("WhatsApp", res2["answer"])
+        self.assertIn("please call me back", res2["answer"])
+
+    def test_screen_vision_confirmation(self):
+        res = orchestrator.process_request("can you see my screen")
+        self.assertIn("Loud and clear, sir", res["answer"])
+        self.assertTrue(bool(res.get("vision_capture")))
+
+    def test_volume_and_media_control(self):
+        res_vol = orchestrator.process_request("volume up")
+        self.assertIn("Increasing master volume", res_vol["answer"])
+
+        res_mute = orchestrator.process_request("mute audio")
+        self.assertIn("Master audio muted", res_mute["answer"])
+
+        res_media = orchestrator.process_request("pause music")
+        self.assertIn("Audio playback toggled", res_media["answer"])
+
+    def test_telemetry_intents(self):
+        res_time = orchestrator.process_request("what time is it")
+        self.assertIn("currently", res_time["answer"])
+
+        res_bat = orchestrator.process_request("battery status")
+        self.assertTrue("battery" in res_bat["answer"].lower() or "power" in res_bat["answer"].lower())
+
 
 class TestRestAPI(unittest.TestCase):
     BASE_URL = "http://localhost:4700"

@@ -90,7 +90,7 @@ class AgentOrchestrator:
                 "state": "IDLE"
             }
 
-        if re.search(r'\b(go\s*back|back|return|return\s*to\s*main|close\s*knowledge\s*base|main\s*ui|main\s*screen|main\s*console|workshop)\b', q_lower):
+        if re.search(r'\b(go\s*back|return\s*to\s*main|close\s*knowledge\s*base|switch\s*to\s*main|main\s*ui|main\s*screen|main\s*console|workshop\s*table)\b', q_lower) and not re.search(r'\b(call|write|text|msg|message|come|talk|bring)\s+back\b', q_lower):
             return {
                 "answer": "Returning to main console, sir.",
                 "session_id": session_id,
@@ -109,7 +109,7 @@ class AgentOrchestrator:
             }
 
         # 1. Emergency Stop & Pause Commands
-        if re.match(r'^(stop|halt|cancel|abort|emergency stop|freeze)\b', q_lower):
+        if re.match(r'^(stop|halt|cancel|abort|emergency stop|freeze)\b', q_lower) and not re.search(r'\b(music|song|playback|audio|track)\b', q_lower):
             broker.trigger_emergency_stop()
             return {
                 "answer": "All automated processes have been immediately halted, sir. Systems are standing down.",
@@ -117,6 +117,12 @@ class AgentOrchestrator:
                 "nodes": [],
                 "state": "STOPPED"
             }
+
+        # Media playback pause / resume check (before broker pause):
+        if re.search(r'\b(pause|resume|stop|toggle)\s+(?:the\s+)?(?:music|song|playback|audio|track)\b', q_lower):
+            from jarvis.desktop.windows import control_media
+            control_media("play_pause")
+            return {"answer": "Audio playback toggled, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
 
         if re.match(r'^(pause|unpause|resume)\b', q_lower):
             res = broker.toggle_pause()
@@ -135,19 +141,41 @@ class AgentOrchestrator:
                 }
 
         # 2. Direct Screen Vision Intent
+        is_screen_confirm = bool(
+            re.search(r'\b(can\s+you\s+see\s+(?:my\s+|the\s+)?screen|are\s+you\s+looking\s+at\s+(?:my\s+|the\s+)?screen|can\s+you\s+see\s+this|do\s+you\s+see\s+my\s+screen|see\s+my\s+screen)\b', q_lower)
+        )
+        if is_screen_confirm:
+            from jarvis.vision.capture import capture_screen
+            from jarvis.desktop.windows import get_active_window
+            cap = capture_screen(mode="fullscreen")
+            act = get_active_window()
+            act_title = act["title"] if act else "your Windows desktop"
+            return {
+                "answer": f"Loud and clear, sir. Optical telemetry is locked onto your active display, currently centered on {act_title}. How may I direct our attention?",
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "vision_capture": cap
+            }
+
         screen_vision_triggers = [
             "what's on my screen", "what is on my screen", "look at my screen", "look at the screen",
-            "see my screen", "see the screen", "can you see my screen", "can you see the screen",
             "what do you see on my screen", "what do you see on screen", "inspect screen", "inspect my screen",
             "inspect what is on my screen", "check my screen", "check screen", "analyze screen",
             "read this error", "explain this error", "what does this button do", "view screen", "describe screen",
-            "can you see", "look screen"
+            "look screen"
         ]
         is_screen_query = any(kw in q_lower for kw in screen_vision_triggers) or bool(
-            re.search(r'\b(see|look\s+at|inspect|view|describe|check|analyze|what(?:\'s|\s+is)\s+on|can\s+you\s+see)\s+(?:what(?:\'s|\s+is)\s+on\s+)?(?:my\s+|the\s+)?screen\b', q_lower)
+            re.search(r'\b(look\s+at|inspect|view|describe|check|analyze|what(?:\'s|\s+is)\s+on)\s+(?:what(?:\'s|\s+is)\s+on\s+)?(?:my\s+|the\s+)?screen\b', q_lower)
         )
         if is_screen_query:
-            vis_res = dispatch_skill("vis_describe_screen", {"prompt": question})
+            vis_prompt = (
+                f"You are J.A.R.V.I.S. (voiced by Paul Bettany from Iron Man). "
+                f"The user asked: '{question}'. "
+                f"Analyze the screenshot and provide a sharp, witty, sophisticated 2-sentence executive summary of what the user is currently looking at or working on in their active window. "
+                f"Do NOT describe every icon or list trivial UI elements. Address the user as 'sir' and conclude with an actionable offer of assistance."
+            )
+            vis_res = dispatch_skill("vis_describe_screen", {"prompt": vis_prompt})
             if vis_res.get("status") == "success":
                 ans = vis_res.get("analysis", "I have analyzed your screen, sir.")
                 return {
@@ -171,6 +199,106 @@ class AgentOrchestrator:
                 "graph_updated": True,
                 "graph": res.get("graph")
             }
+
+        # 3. WhatsApp Messaging Intent (e.g. "send msg in whatsapp to John saying I'll be late", "send whatsapp message to 0771234567 saying hello", "send message in whatsapp")
+        whatsapp_pat = re.compile(
+            r'\b(?:send\s+(?:a\s+)?(?:msg|message)\s+(?:on|in|via|through)?\s*whatsapp|send\s+(?:a\s+)?whatsapp(?:\s+msg|\s+message)?|whatsapp\s+(?:to\s+)?[a-zA-Z0-9+_\s]+\s+(?:saying|that|with))\b',
+            re.I
+        )
+        if whatsapp_pat.search(q_lower):
+            extract_pat = re.compile(
+                r'\b(?:send\s+(?:a\s+)?(?:msg|message)\s+(?:on|in|via|through)?\s*whatsapp|send\s+(?:a\s+)?whatsapp(?:\s+msg|\s+message)?|whatsapp)\b(?:\s+(?:to\s+)?(?!(?:saying|that|with|message|msg)\b)(?P<recipient>[a-zA-Z0-9+_\s]+?))?(?:\s+(?:saying|that|with\s+text|message|msg)\s+(?P<message>.+))?$',
+                re.I
+            )
+            wa_match = extract_pat.search(q_lower)
+            recip = (wa_match.group("recipient") or "").strip() if wa_match else ""
+            if recip and not recip.startswith("+") and not recip.isdigit():
+                recip = recip.title()
+            msg_content = (wa_match.group("message") or "").strip() if wa_match else ""
+            from jarvis.desktop.windows import send_whatsapp_message
+            wa_res = send_whatsapp_message(recipient=recip or None, message=msg_content)
+            if recip and msg_content:
+                ans = f"Dispatching your message via WhatsApp to {recip} now, sir: '{msg_content}'."
+            elif msg_content:
+                ans = f"Opening WhatsApp with your draft now, sir: '{msg_content}'. Select your contact to send."
+            elif recip:
+                ans = f"Opening WhatsApp chat for {recip}, sir. What message would you like to send?"
+            else:
+                ans = "Opening WhatsApp for you now, sir. Whom shall I message and what is the content?"
+            return {
+                "answer": ans,
+                "session_id": session_id,
+                "nodes": [],
+                "state": "EXECUTING",
+                "action": wa_res
+            }
+
+        # 3b-1. Media & Music Playback Control (pause/play/skip/next/previous)
+        if re.search(r'\b(pause\s+(?:the\s+)?(?:music|song|playback|audio)|resume\s+(?:the\s+)?(?:music|song|playback|audio)|toggle\s+playback|stop\s+(?:the\s+)?(?:music|song|playback))\b', q_lower):
+            from jarvis.desktop.windows import control_media
+            control_media("play_pause")
+            return {"answer": "Audio playback toggled, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        if re.search(r'\b(next\s+(?:song|track)|skip\s+(?:this\s+)?(?:song|track))\b', q_lower):
+            from jarvis.desktop.windows import control_media
+            control_media("next")
+            return {"answer": "Skipping to the next track, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        if re.search(r'\b(previous\s+(?:song|track)|prev\s+(?:song|track)|last\s+(?:song|track))\b', q_lower):
+            from jarvis.desktop.windows import control_media
+            control_media("prev")
+            return {"answer": "Returning to the previous track, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        # 3b-2. Master Volume Controls
+        if re.search(r'\b(volume\s*up|increase\s+volume|turn\s+(?:the\s+)?volume\s*up|turn\s+it\s+up|louder)\b', q_lower):
+            from jarvis.desktop.windows import control_volume
+            control_volume("up", 6)
+            return {"answer": "Increasing master volume, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        if re.search(r'\b(volume\s*down|decrease\s+volume|turn\s+(?:the\s+)?volume\s*down|turn\s+it\s+down|quieter|lower\s+volume)\b', q_lower):
+            from jarvis.desktop.windows import control_volume
+            control_volume("down", 6)
+            return {"answer": "Decreasing master volume, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        if re.search(r'\b(mute\s+(?:the\s+)?(?:audio|volume|sound|pc)|unmute\s+(?:the\s+)?(?:audio|volume|sound|pc)|silence\s+audio)\b', q_lower):
+            from jarvis.desktop.windows import control_volume
+            control_volume("mute")
+            return {"answer": "Master audio muted, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        # 3b-3. Workstation Security & Layout Controls
+        if re.search(r'\b(lock\s+(?:my\s+|the\s+)?(?:pc|screen|workstation|computer)|secure\s+(?:the\s+)?(?:terminal|station|pc))\b', q_lower):
+            from jarvis.desktop.windows import lock_workstation
+            lock_workstation()
+            return {"answer": "Securing workstation immediately, sir. All neural channels locked.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        if re.search(r'\b(show\s+desktop|minimize\s+all|minimize\s+everything|clear\s+(?:the\s+)?screen)\b', q_lower):
+            from jarvis.desktop.windows import show_desktop
+            show_desktop()
+            return {"answer": "Clearing the display and revealing your desktop, sir.", "session_id": session_id, "nodes": [], "state": "EXECUTING"}
+
+        # 3b-4. Time & Clock Telemetry
+        if re.search(r'\b(what\s+(?:time\s+is\s+it|is\s+the\s+time)|current\s+time|tell\s+me\s+the\s+time)\b', q_lower):
+            import datetime
+            now_str = datetime.datetime.now().strftime("%I:%M %p")
+            return {"answer": f"It is currently {now_str}, sir. All systems are nominal.", "session_id": session_id, "nodes": [], "state": "IDLE"}
+
+        # 3b-5. Battery & Power Telemetry
+        if re.search(r'\b(battery|battery\s+status|power\s+level|power\s+status)\b', q_lower):
+            from jarvis.desktop.windows import get_battery_status
+            bat = get_battery_status()
+            if bat["has_battery"]:
+                state_desc = "plugged in and charging" if bat["power_plugged"] else "running on internal battery"
+                ans = f"Battery reserves stand at {bat['percent']}%, {state_desc}, sir."
+            else:
+                ans = "Workstation is operating directly on AC mainline power with unlimited reserves, sir."
+            return {"answer": ans, "session_id": session_id, "nodes": [], "state": "IDLE"}
+
+        # 3b-6. Live Weather Telemetry
+        if re.search(r'\b(weather|what(?:\'s|\s+is)\s+(?:the\s+)?weather|temperature\s+outside|forecast)\b', q_lower):
+            from jarvis.desktop.windows import get_weather_telemetry
+            w = get_weather_telemetry()
+            ans = f"Current meteorological conditions indicate {w['description']} at {w['temp_c']}°C with {w['humidity']}% humidity and wind speeds of {w['wind_kmh']} km/h, sir."
+            return {"answer": ans, "session_id": session_id, "nodes": [], "state": "IDLE"}
 
         # 3. Direct Multi-Application & Web Service Launch Intent (e.g. "open yt and whatsapp", "open up yootube", "can you please open chrome")
         clean_launch_q = re.sub(r'^(?:jarvis[,:\s]*|hey\s+jarvis[,:\s]*|please[,:\s]*|can\s+you\s+(?:please\s+)?|could\s+you\s+(?:please\s+)?|i\s+want\s+you\s+to\s+|would\s+you\s+(?:kindly\s+)?)+', '', q_lower).strip()
