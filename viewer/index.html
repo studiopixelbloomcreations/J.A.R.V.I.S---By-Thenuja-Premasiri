@@ -796,6 +796,27 @@
       color: var(--crimson);
       animation: pulseMic 1.2s infinite;
     }
+    .prompt-icon-btn.lang-btn {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      border-color: rgba(0, 229, 255, 0.35);
+      width: auto;
+      min-width: 44px;
+      padding: 0 8px;
+      border-radius: 17px;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .prompt-icon-btn.lang-btn.sinhala {
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+    }
     @keyframes pulseMic {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.1); box-shadow: 0 0 12px var(--crimson); }
@@ -1123,6 +1144,10 @@
         <button class="prompt-icon-btn mic-btn" id="btn-mic-toggle" onclick="toggleMicrophone()" title="Voice Input (Speech-to-Text)">
           🎙
         </button>
+        <!-- Language Toggle (EN / SI) -->
+        <button class="prompt-icon-btn lang-btn" id="btn-speech-lang" onclick="toggleSpeechLanguage()" title="Switch Voice Language: English / Sinhala (සිංහල)">
+          🌐 EN
+        </button>
         <!-- Remember / Note Quick Capture -->
         <button class="prompt-icon-btn" onclick="quickRememberPrompt()" title="Remember Note (writes to captures/)">
           📝
@@ -1353,39 +1378,15 @@
         .linkDirectionalParticleSpeed(0.003)
         .onNodeClick(node => focusOnNode(node));
 
-      // Configure d3-force-3d simulation for cohesive celestial nebula
-      Graph.d3Force('charge').strength(-85);
+      // Configure d3-force-3d simulation fully controlled by sliders (no magnetic centroid clamp)
+      const initialRepel = parseFloat(document.getElementById('force-repel') ? document.getElementById('force-repel').value : -150);
+      const initialLength = parseFloat(document.getElementById('force-length') ? document.getElementById('force-length').value : 70);
+      Graph.d3Force('charge').strength(initialRepel);
       Graph.d3Force('link').distance(link => {
-        if (link.type === 'backbone') return 80;   // Cohesive galactic backbone
-        if (link.type === 'spoke') return 30;      // Notes orbit around their folder hub
-        return 50;                                // Cross references
+        if (link.type === 'backbone') return initialLength * 1.5;
+        if (link.type === 'spoke') return initialLength;
+        return initialLength * 1.2;
       });
-
-      // Cluster sector gravity pulling nodes to their folder centroids in balanced space
-      const centroids = (typeof GRAPH !== 'undefined' && GRAPH.centroids) ? GRAPH.centroids : {
-        "personal": [-110, 60, -70],
-        "finance": [100, -50, 80],
-        "operations": [-90, -70, 65],
-        "marketing": [70, 85, -60],
-        "products": [85, -75, -60],
-        "team": [-80, 45, 90],
-        "captures": [0, -100, -50],
-        "apex-logistics": [0, 100, 50]
-      };
-
-      const clusterSectorForce = () => {
-        if (!GRAPH || !GRAPH.nodes) return;
-        for (const n of GRAPH.nodes) {
-          const c = centroids[n.group];
-          if (c) {
-            const pull = n.is_hub ? 0.025 : 0.012;
-            n.vx = (n.vx || 0) + (c[0] - n.x) * pull;
-            n.vy = (n.vy || 0) + (c[1] - n.y) * pull;
-            n.vz = (n.vz || 0) + (c[2] - n.z) * pull;
-          }
-        }
-      };
-      Graph.d3Force('cluster_sector', clusterSectorForce);
 
       // Relax camera distance restrictions for fluid zooming
       const controls = Graph.controls();
@@ -1490,9 +1491,39 @@
       if (!Graph) return;
       const repelVal = parseFloat(document.getElementById('force-repel').value);
       const lengthVal = parseFloat(document.getElementById('force-length').value);
-      Graph.d3Force('charge').strength(repelVal);
-      Graph.d3Force('link').distance(lengthVal);
-      Graph.numDimensions(3);
+      const charge = Graph.d3Force('charge');
+      if (charge) charge.strength(repelVal);
+      const link = Graph.d3Force('link');
+      if (link) {
+        link.distance(l => {
+          if (l.type === 'backbone') return lengthVal * 1.5;
+          if (l.type === 'spoke') return lengthVal;
+          return lengthVal * 1.2;
+        });
+      }
+      if (typeof Graph.d3ReheatSimulation === 'function') {
+        Graph.d3ReheatSimulation();
+      }
+    }
+
+    function changeDisplayMode(mode) {
+      if (!Graph) return;
+      if (mode === 'macro') {
+        document.getElementById('force-repel').value = -150;
+        document.getElementById('force-length').value = 70;
+        updateGraphForces();
+        Graph.cameraPosition({ x: 0, y: 70, z: 270 }, { x: 0, y: 0, z: 0 }, 1000);
+      } else if (mode === 'free') {
+        document.getElementById('force-repel').value = -320;
+        document.getElementById('force-length').value = 130;
+        updateGraphForces();
+        Graph.cameraPosition({ x: 0, y: 90, z: 360 }, { x: 0, y: 0, z: 0 }, 1000);
+      } else if (mode === 'focus') {
+        document.getElementById('force-repel').value = -90;
+        document.getElementById('force-length').value = 45;
+        updateGraphForces();
+        Graph.cameraPosition({ x: -40, y: 30, z: 120 }, { x: 0, y: 0, z: 0 }, 1000);
+      }
     }
 
     function fitGraphView() {
@@ -1881,8 +1912,9 @@
           }
         }
 
-        // Check for wake word "Jarvis"
-        const wakeWordMatch = lowerAll.match(/\b(hey\s+)?jarvis\b/i);
+        // Check for wake word "Jarvis" in English or Sinhala (ජාවිස් / ජාර්විස්)
+        const wakeWordMatch = lowerAll.match(/\b(hey\s+)?(jarvis|ජාවිස්|ජාර්විස්)\b/i) || liveText.match(/(?:hey\s+)?(?:jarvis|ජාවිස්|ජාර්විස්)/i);
+        const isSinhala = /[\u0D80-\u0DFF]/.test(liveText) || currentSpeechLang === 'si-LK';
 
         // ══════════════════════════════════════════════════════════════════
         // CASE A: PASSIVE MONITORING (Waiting for "JARVIS")
@@ -1929,8 +1961,8 @@
           }
 
           // Ambient autonomous background learning in passive mode
-          if (finalText.trim().length > 12) {
-            scheduleAmbientLearning(finalText.trim());
+          if (finalText.trim().length > 10) {
+            scheduleAmbientLearning(finalText.trim(), isSinhala ? 'si-LK' : 'en-GB');
           }
           return;
         }
@@ -1967,7 +1999,7 @@
           const delay = computeSilenceDelay(queryToSubmit);
           silenceTimer = setTimeout(() => {
             let finalClean = queryToSubmit;
-            const m = queryToSubmit.toLowerCase().match(/\b(hey\s+)?jarvis\b/i);
+            const m = queryToSubmit.toLowerCase().match(/\b(hey\s+)?(jarvis|ජාවිස්|ජාර්විස්)\b/i) || queryToSubmit.match(/(?:hey\s+)?(?:jarvis|ජාවිස්|ජාර්විස්)/i);
             if (m && m.index < 10) {
               finalClean = queryToSubmit.slice(m.index + m[0].length).replace(/^[,:\s]+/, '').trim() || queryToSubmit;
             }
@@ -1979,6 +2011,19 @@
       };
 
       speechRec.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          console.warn("Microphone access was denied or not permitted.");
+          shouldKeepListening = false;
+          isRecStarted = false;
+          isListening = false;
+          updateMicButtonState(false);
+          const btn = document.getElementById('btn-mic-toggle');
+          if (btn) {
+            btn.style.color = '#ef4444';
+            btn.title = 'Microphone permission blocked. Click here to request mic access.';
+          }
+          return;
+        }
         if (e.error !== 'no-speech' && e.error !== 'aborted') {
           console.warn("Speech error:", e.error);
         }
@@ -1988,7 +2033,7 @@
         isRecStarted = false;
         isListening = false;
         updateMicButtonState(false);
-        // Continuously keep always-listening active
+        // Continuously keep always-listening active if allowed
         if (shouldKeepListening) {
           setTimeout(() => {
             if (!isRecStarted) startSpeechListening();
@@ -1998,19 +2043,19 @@
     }
 
     // ── Continuous Ambient Learning Pipeline ──
-    function scheduleAmbientLearning(phrase) {
+    function scheduleAmbientLearning(phrase, lang = 'en-GB') {
       ambientBuffer.push(phrase);
       clearTimeout(ambientLearnTimer);
       ambientLearnTimer = setTimeout(async () => {
         const combined = ambientBuffer.join(' ').trim();
         ambientBuffer = [];
-        if (!combined || combined.length < 15) return;
+        if (!combined || combined.length < 12) return;
 
         try {
           const res = await fetch('/ambient_learn', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: combined })
+            body: JSON.stringify({ text: combined, lang: lang })
           });
           const data = await res.json();
           if (data.learned && data.node) {
@@ -2065,13 +2110,52 @@
       if (btn) btn.classList.toggle('listening', active);
     }
 
+    let currentSpeechLang = 'en-GB';
+
+    function toggleSpeechLanguage() {
+      const btn = document.getElementById('btn-speech-lang');
+      if (currentSpeechLang === 'en-GB') {
+        currentSpeechLang = 'si-LK';
+        if (btn) {
+          btn.innerText = '🌐 SI';
+          btn.classList.add('sinhala');
+          btn.title = 'Active: Sinhala (සිංහල). Speech translated to English.';
+        }
+        if (currentBrain === 'gemini-live') {
+          updateLiveTranscriptBubble('✦ JARVIS: Listening in Sinhala (සිංහල)...');
+        }
+      } else {
+        currentSpeechLang = 'en-GB';
+        if (btn) {
+          btn.innerText = '🌐 EN';
+          btn.classList.remove('sinhala');
+          btn.title = 'Active: English. Click to switch to Sinhala.';
+        }
+        if (currentBrain === 'gemini-live') {
+          updateLiveTranscriptBubble('✦ JARVIS: Listening in English...');
+        }
+      }
+      if (speechRec) {
+        speechRec.lang = currentSpeechLang;
+        if (isRecStarted) {
+          try {
+            speechRec.stop();
+          } catch (e) {}
+        }
+      }
+    }
+
     function toggleMicrophone() {
+      const btn = document.getElementById('btn-mic-toggle');
+      if (btn) btn.style.color = '';
       if (isListening || isRecStarted) {
         shouldKeepListening = false;
         stopSpeechListening();
+        updateMicButtonState(false);
       } else {
         shouldKeepListening = true;
         startSpeechListening();
+        updateMicButtonState(true);
       }
     }
 
@@ -2116,10 +2200,16 @@
       orbInstance.setState('thinking', currentBrain === 'gemini-live' ? 'STREAMING' : 'REASONING');
 
       try {
+        const isSinhala = /[\u0D80-\u0DFF]/.test(q) || currentSpeechLang === 'si-LK';
         const res = await fetch('/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, brain: currentBrain })
+          body: JSON.stringify({
+            question: q,
+            brain: currentBrain,
+            lang: currentSpeechLang,
+            is_sinhala: isSinhala
+          })
         });
         const data = await res.json();
 

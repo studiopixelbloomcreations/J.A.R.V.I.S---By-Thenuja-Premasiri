@@ -193,14 +193,25 @@ def organize_unassigned_notes():
     return organized
 
 
-def handle_ambient_learn(raw_text):
+def handle_ambient_learn(raw_text, lang="en-GB"):
     """
     Autonomous ambient background learner.
     Analyzes spoken text from the continuous listener.
+    If speech is in Sinhala, seamlessly translates to English first.
     If personal knowledge or user preferences/projects are mentioned,
     it automatically writes a note to notes/personal/ and updates the Knowledge Galaxy.
     """
     clean_text = raw_text.strip()
+    try:
+        from jarvis.core.translator import is_sinhala_text, translate_sinhala_to_english
+        if is_sinhala_text(clean_text) or lang == "si-LK":
+            translated = translate_sinhala_to_english(clean_text)
+            if translated:
+                print(f"  🌐 [Ambient Sinhala] Translated: '{clean_text}' => '{translated}'")
+                clean_text = translated
+    except Exception as e:
+        print(f"  ⚠ Ambient translation error: {e}")
+
     words = clean_text.split()
     if len(words) < 4:
         return {"learned": False, "reason": "Too short"}, 200

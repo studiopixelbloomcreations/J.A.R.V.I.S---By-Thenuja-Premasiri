@@ -169,12 +169,14 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
         question = body.get("question", body.get("message", "")).strip()
         session_id = body.get("session_id", "")
         active_brain = body.get("brain", body.get("model", "gemini-3.5"))
+        lang = body.get("lang", "en-GB")
+        is_sinhala = body.get("is_sinhala", False)
 
         if not question:
             self._send_json({"error": "No question provided."}, 400)
             return
 
-        result = orchestrator.process_request(question, session_id, active_brain)
+        result = orchestrator.process_request(question, session_id, active_brain, lang=lang, is_sinhala=is_sinhala)
         self._send_json(result)
 
     def _handle_remember(self):
@@ -191,12 +193,13 @@ class JarvisHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_ambient_learn(self):
         body = self._read_json()
         raw_text = body.get("text", "").strip()
+        lang = body.get("lang", "en-GB")
         if not raw_text or len(raw_text.split()) < 3:
             self._send_json({"learned": False, "reason": "Insufficient speech."}, 200)
             return
 
         from server_legacy_remember import handle_ambient_learn
-        res, status = handle_ambient_learn(raw_text)
+        res, status = handle_ambient_learn(raw_text, lang=lang)
         self._send_json(res, status)
 
     def _handle_organize(self):

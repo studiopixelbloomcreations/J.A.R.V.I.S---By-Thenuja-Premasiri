@@ -9,6 +9,7 @@ import uuid
 import time
 from .gateway import call_gemini
 from .permissions import broker
+from .translator import is_sinhala_text, translate_sinhala_to_english
 from ..config import load_config, load_user_profile
 from ..skills.handlers import dispatch_skill
 from ..knowledge.graph import load_graph_data, scan_full_texts
@@ -38,15 +39,25 @@ class AgentOrchestrator:
             return "remember"
         return "knowledge_qa"
 
-    def process_request(self, question, session_id=None, active_brain="gemini-3.5"):
+    def process_request(self, question, session_id=None, active_brain="gemini-3.5", lang="en-GB", is_sinhala=False):
         """
         Main execution pipeline for user prompts.
         1. Checks global stop / pause signals.
-        2. Dispatches explicit intent (vision, desktop control, diagnostics, organize, remember).
-        3. Falls back to note-grounded knowledge reasoning with butler persona.
+        2. Detects Sinhala speech/input, translates to English for semantic matching.
+        3. Dispatches explicit intent (vision, desktop control, diagnostics, organize, remember).
+        4. Falls back to note-grounded knowledge reasoning with butler persona.
+        5. Strictly answers in English regardless of input language.
         """
         if not session_id:
             session_id = str(uuid.uuid4())[:8]
+
+        original_question = question
+        is_sin = is_sinhala or lang == "si-LK" or is_sinhala_text(question)
+        if is_sin:
+            translated_en = translate_sinhala_to_english(question)
+            if translated_en:
+                print(f"  🌐 [Bilingual Bridge] Sinhala -> English: '{original_question}' => '{translated_en}'")
+                question = translated_en
 
         q_lower = question.lower().strip()
 
@@ -268,7 +279,8 @@ class AgentOrchestrator:
             "1. Answer questions concisely in 1-2 razor-sharp, sophisticated sentences. Never ramble.\n"
             "2. Whenever drawing upon the archived notes, cite the source node ID in brackets like [3] or [12] immediately after the fact.\n"
             "3. If engaged in casual banter or greetings, deliver dry butler wit and strictly cite NO note IDs.\n"
-            "4. For missing information, observe dryly that the archives remain silent.\n\n"
+            "4. For missing information, observe dryly that the archives remain silent.\n"
+            "5. You must formulate your response strictly and entirely in fluent English with a refined British butler persona, regardless of the input language.\n\n"
             f"=== USER CONTEXT PROFILE ===\n{user_profile}\n\n"
             f"=== ARCHIVED NOTES ===\n{notes_context}\n"
         )
@@ -288,7 +300,8 @@ class AgentOrchestrator:
             "answer": answer,
             "session_id": session_id,
             "nodes": cited_ids if not is_casual else [],
-            "state": "IDLE"
+            "state": "IDLE",
+            "translated_prompt": question if is_sin else None
         }
 
 
