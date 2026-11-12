@@ -80,22 +80,12 @@ class AgentOrchestrator:
                 "state": "IDLE"
             }
 
-        # 0a. Dual-Screen UI View Switching Commands (Main UI vs Knowledge Base UI)
-        if re.search(r'\b(go\s*to|open|show|display|launch|switch\s*to)\b.*?\b(knowledge\s*base|knowledge|galaxy|3d\s*galaxy|neural\s*galaxy|graph)\b', q_lower):
+        # 0a. Knowledge Base Neural Galaxy focus command
+        if re.search(r'\b(go\s*to|open|show|display|launch|switch\s*to|focus)\b.*?\b(knowledge\s*base|knowledge|galaxy|3d\s*galaxy|neural\s*galaxy|graph)\b', q_lower):
             return {
-                "answer": "Opening Knowledge Base neural galaxy, sir. All sector hubs loaded.",
+                "answer": "Displaying the Knowledge Base neural galaxy, sir. All sector hubs and 3D nodes are live.",
                 "session_id": session_id,
                 "nodes": [],
-                "switch_ui": "knowledge-base",
-                "state": "IDLE"
-            }
-
-        if re.search(r'\b(go\s*back|return\s*to\s*main|close\s*knowledge\s*base|switch\s*to\s*main|main\s*ui|main\s*screen|main\s*console|workshop\s*table)\b', q_lower) and not re.search(r'\b(call|write|text|msg|message|come|talk|bring)\s+back\b', q_lower):
-            return {
-                "answer": "Returning to main console, sir.",
-                "session_id": session_id,
-                "nodes": [],
-                "switch_ui": "main",
                 "state": "IDLE"
             }
 

@@ -277,14 +277,9 @@ class TestOrchestrator(unittest.TestCase):
         self.assertIn("YouTube and WhatsApp", res["answer"])
         self.assertEqual(res["state"], "EXECUTING")
 
-    def test_dual_screen_ui_switching(self):
+    def test_knowledge_base_focus(self):
         res_kb = orchestrator.process_request("go to knowledge base")
-        self.assertEqual(res_kb.get("switch_ui"), "knowledge-base")
         self.assertIn("Knowledge Base", res_kb.get("answer", ""))
-
-        res_main = orchestrator.process_request("go back to main console")
-        self.assertEqual(res_main.get("switch_ui"), "main")
-        self.assertIn("main console", res_main.get("answer", ""))
 
     def test_whatsapp_messaging_intent(self):
         res1 = orchestrator.process_request("send msg in whatsapp to John saying I am running late")
@@ -431,48 +426,26 @@ class TestRestAPI(unittest.TestCase):
         self.assertEqual(res_wa["status"], "success")
         self.assertIn("whatsapp", res_wa["target"])
 
-    def test_top_hud_navigation_pills(self):
+    def test_original_graph_and_orb_ui(self):
         with open("viewer/index.html", "r", encoding="utf-8") as f:
             html = f.read()
 
-        # 1. Verify all 6 HUD pills exist in the nav bar
-        pills = [
-            ("hud-pill-playlist", "PLAYLIST"),
-            ("hud-pill-play", "PLAY"),
-            ("hud-pill-clear", "CLEAR HUD"),
-            ("hud-pill-saved", "SAVED"),
-            ("hud-pill-cards", "REPORT: CARDS"),
-            ("hud-pill-metadata", "METADATA: DEFAULT")
-        ]
-        for pill_id, label in pills:
-            self.assertIn(f'id="{pill_id}"', html, f"Missing pill {pill_id}")
-            self.assertIn(label, html, f"Missing label {label}")
+        # 1. Verify single graph UI layout
+        self.assertIn('id="graph-container"', html)
+        self.assertIn('initThreeForceGraph', html)
+        self.assertIn('id="jarvis-orb-canvas"', html)
+        self.assertIn('AssistiveTouch', html)
 
-        # 2. Verify Neon Cyan styling and active states
-        self.assertIn("#00e5ff", html)
-        self.assertIn(".hud-nav-pill.active", html)
-        self.assertIn(".hud-nav-pills-bar", html)
-
-        # 3. Verify Click triggers
-        self.assertIn("toggleHudPill('playlist')", html)
-        self.assertIn("toggleHudPill('play')", html)
-        self.assertIn("toggleHudPill('clear')", html)
-        self.assertIn("toggleHudPill('saved')", html)
-        self.assertIn("toggleHudPill('cards')", html)
-        self.assertIn("toggleHudPill('metadata')", html)
-
-        # 4. Verify Voice triggers in speech recognition
-        self.assertIn("lowerAll.includes('clear hud')", html)
-        self.assertIn("lowerAll.includes('report cards')", html)
-        self.assertIn("lowerAll.includes('open playlist')", html)
-        self.assertIn("lowerAll.includes('show saved')", html)
-        self.assertIn("lowerAll.includes('toggle metadata')", html)
-
-        # 5. Verify Drawers & Overlays
-        self.assertIn('id="hud-playlist-drawer"', html)
-        self.assertIn('id="hud-saved-drawer"', html)
-        self.assertIn('id="hud-metadata-overlay"', html)
-        self.assertIn('id="hud-wipe-overlay"', html)
+        # 2. Verify orb multi-colored reactive states
+        with open("viewer/orb.js", "r", encoding="utf-8") as f:
+            orb_js = f.read()
+        self.assertIn("colorSchemes", orb_js)
+        self.assertIn("listening", orb_js)
+        self.assertIn("thinking", orb_js)
+        self.assertIn("speaking", orb_js)
+        self.assertIn("executing", orb_js)
+        self.assertIn("waiting_for_approval", orb_js)
+        self.assertIn("error", orb_js)
 
 
 if __name__ == "__main__":
